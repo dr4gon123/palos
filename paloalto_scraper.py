@@ -19,7 +19,7 @@ import time
 import re
 import logging
 import yaml
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -66,19 +66,17 @@ class PaloAltoLogScraper:
 
         # Load exceptions/corrections file
         exceptions = self._load_config('paloalto_scraper_exceptions.yaml', label='exceptions')
-        self.global_name_overrides = exceptions.get('global_name_overrides', {})
-        self.field_table_overrides = exceptions.get('field_table_overrides', {})
-        self.token_corrections = exceptions.get('token_corrections', {})
+        self.field_name_lookup_corrections_global = exceptions.get('field_name_lookup_corrections', {}).get('global', {})
+        self.field_name_lookup_corrections_per_log = exceptions.get('field_name_lookup_corrections', {}).get('per_log_type', {})
+        self.variable_name_corrections_global = exceptions.get('variable_name_corrections', {}).get('global', {})
+        self.variable_name_corrections_per_log = exceptions.get('variable_name_corrections', {}).get('per_log_type', {})
         self.per_log_corrections = exceptions.get('per_log_corrections', {})
-        self.strip_leading_future_use = config.get('settings', {}).get('strip_leading_future_use', False)
 
         logger.info(f"Loaded {len(self.versions)} versions from main config")
         logger.info(f"Force rescrape: {self.force_rescrape}")
         logger.info(f"Dry run mode: {self.dry_run}")
-        logger.info(f"Strip leading FUTURE_USE: {self.strip_leading_future_use}")
-        logger.info(f"Loaded {len(self.global_name_overrides)} global name overrides, "
-                    f"{len(self.field_table_overrides)} field table overrides, "
-                    f"{len(self.token_corrections)} token corrections, "
+        logger.info(f"Loaded {len(self.field_name_lookup_corrections_global)} field name lookup corrections (global), "
+                    f"{len(self.variable_name_corrections_global)} variable name corrections (global), "
                     f"{len(self.per_log_corrections)} per-log correction entries")
 
     def _load_config(self, config_file: str, label: str = 'configuration') -> dict:
@@ -201,139 +199,12 @@ class PaloAltoLogScraper:
 
         return None
 
-    def extract_format_string(self, soup: BeautifulSoup) -> Optional[str]:
-        """
-        Extract the syslog format string from the page
-
-        Args:
-            soup: BeautifulSoup object of the page
-
-        Returns:
-            Format string or None if not found
-        """
-        # Look for text that starts with "Format:"
-        text_content = soup.get_text()
-
-        # Pattern to match "Format:" followed by the comma-separated list
-        format_match = re.search(r'Format\s*:\s*(.+?)(?:\n\s*\n|\n{2,})', text_content, re.IGNORECASE | re.DOTALL)
-
-        if format_match:
-            format_string = format_match.group(1).strip()
-            # Clean up any extra whitespace
-            format_string = re.sub(r'\s+', ' ', format_string)
-            logger.info(f"Found format string: {format_string[:100]}...")
-            return format_string
-
-        logger.warning("No format string found on page")
-        return None
-
-    def _extract_variable_name(self, field_name: str) -> str:
-        """
-        Extract variable name from Field Name.
-        Format: "Field Long Name (variable_name ...)" -> "variable_name"
-        """
-        match = re.match(r"^.+?\s+\(([^)]+)\)", str(field_name))
-        if match:
-            # Take first word in parentheses (handles "x or y" cases)
-            return match.group(1).split()[0].strip()
-        return ""
-
-    def _apply_field_table_corrections(self, field_table: pd.DataFrame) -> pd.DataFrame:
-        """Apply corrections to the Variable Name column of the field table.
-
-        - Non-empty Variable Names: apply token_corrections (fixes PA docs typos).
-        - Empty Variable Names: fill from global_name_overrides using the long field name
-          (handles fields like Audit_Log's Serial Number that have no parenthetical in PA docs).
-        """
-        if 'Variable Name' not in field_table.columns or 'Field Name' not in field_table.columns:
-            return field_table
-
-        corrected_names = []
-        for _, row in field_table.iterrows():
-            raw = row['Variable Name']
-            var_name = "" if pd.isna(raw) else str(raw)
-            field_name = str(row['Field Name'])
-
-            if var_name:
-                corrected_names.append(self.token_corrections.get(var_name, var_name))
-            else:
-                match = re.match(r"^(.+?)\s+\(", field_name)
-                long_name = match.group(1).strip() if match else field_name.strip()
-                corrected_names.append(self.field_table_overrides.get(long_name, ""))
-
-        field_table = field_table.copy()
-        field_table['Variable Name'] = corrected_names
-        return field_table
-
-    def _build_name_map(self, field_table: pd.DataFrame) -> Dict[str, str]:
-        """Build mapping from long field names to variable names."""
-        name_map = {}
-        if 'Field Name' not in field_table.columns or 'Variable Name' not in field_table.columns:
-            return name_map
-
-        for _, row in field_table.iterrows():
-            field_name = str(row['Field Name'])
-            var_name = str(row['Variable Name'])
-            if not var_name:
-                continue
-            # Extract long name (text before parentheses)
-            match = re.match(r"^(.+?)\s+\(", field_name)
-            if match:
-                long_name = match.group(1).strip()
-                name_map[long_name] = var_name
-                # Normalized whitespace version — only add if distinct to avoid redundant keys
-                normalized = re.sub(r'\s+', ' ', long_name)
-                if normalized != long_name:
-                    name_map[normalized] = var_name
-                name_map[normalized.lower()] = var_name
-            else:
-                # No parenthetical: use the full field name as key.
-                # Handles fields whose Variable Name was filled by field_table_overrides
-                # (e.g. Audit_Log fields that have no parenthetical in PA docs).
-                long_name = re.sub(r'\s+', ' ', field_name).strip()
-                name_map[long_name] = var_name
-                name_map[long_name.lower()] = var_name
-
-        # Global overrides take precedence over auto-detected mappings
-        name_map.update(self.global_name_overrides)
-        return name_map
-
-    def _transform_format_string(self, format_string: str, name_map: Dict[str, str]) -> List[str]:
-        """Transform format string: replace long names with variable names.
-
-        Returns a list of variable-name tokens (not a CSV string).
-        """
-        format_items = [item.strip() for item in format_string.split(',')]
-        new_items = []
-
-        for item in format_items:
-            # Special case: Device Group Hierarchy Level X (only remaining hardcoded rule)
-            match_dg = re.match(r"Device Group Hierarchy Level (\d+)", item, re.IGNORECASE)
-            if match_dg:
-                new_items.append(f"dg_hier_level_{match_dg.group(1)}")
-                continue
-
-            # Try direct match, then normalized, then lowercase
-            normalized = re.sub(r'\s+', ' ', item)
-            if item in name_map:
-                new_items.append(name_map[item])
-            elif normalized in name_map:
-                new_items.append(name_map[normalized])
-            elif normalized.lower() in name_map:
-                new_items.append(name_map[normalized.lower()])
-            else:
-                new_items.append(item)  # Keep original (e.g., FUTURE_USE)
-
-        # Apply token-level corrections (fixes PA docs typos in Variable Name column)
-        new_items = [self.token_corrections.get(item, item) for item in new_items]
-
-        return new_items
-
     def _apply_per_log_corrections(self, items: list, log_type_name: str) -> list:
-        """Apply strip and position- or value-based corrections for a specific log type."""
-        if self.strip_leading_future_use and items and items[0] == "FUTURE_USE":
-            items = items[1:]
+        """Apply position- or value-based corrections for a specific log type.
 
+        Called only from extract_format_string to fix raw format string tokens
+        (e.g., split malformed tokens produced by PA docs bugs).
+        """
         for correction in self.per_log_corrections.get(log_type_name, []):
             if 'match' in correction:
                 target = correction['match']
@@ -366,6 +237,240 @@ class PaloAltoLogScraper:
                 items = items[:pos] + correction['split_into'] + items[pos + 1:]
 
         return items
+
+    def extract_format_string(self, soup: BeautifulSoup, log_type_name: str) -> Tuple[Optional[str], List[str]]:
+        """
+        Extract the syslog format string from the page and apply per-log corrections.
+
+        Args:
+            soup: BeautifulSoup object of the page
+            log_type_name: Name of the log type (used for per-log corrections)
+
+        Returns:
+            (raw_string, corrected_tokens): raw_string is preserved for CSV line 1;
+            corrected_tokens is the comma-split list with per-log corrections applied.
+            Returns (None, []) if no format string found.
+        """
+        text_content = soup.get_text()
+
+        format_match = re.search(r'Format\s*:\s*(.+?)(?:\n\s*\n|\n{2,})', text_content, re.IGNORECASE | re.DOTALL)
+
+        if format_match:
+            raw_string = format_match.group(1).strip()
+            raw_string = re.sub(r'\s+', ' ', raw_string)
+            logger.info(f"Found format string: {raw_string[:100]}...")
+
+            tokens = [item.strip() for item in raw_string.split(',')]
+            tokens = self._apply_per_log_corrections(tokens, log_type_name)
+            return raw_string, tokens
+
+        logger.warning("No format string found on page")
+        return None, []
+
+    def _extract_variable_name(self, field_name: str) -> str:
+        """
+        Extract variable name from Field Name.
+        Format: "Field Long Name(variable_name ...)" or "Field Long Name (variable_name ...)" -> "variable_name"
+        Relaxed \\s*\\( handles malformed parentheticals like "Server Name Indication(sni)".
+        """
+        match = re.match(r"^.+?\s*\(([^)]+)\)", str(field_name))
+        if match:
+            # Take first word in parentheses (handles "x or y" cases)
+            return match.group(1).split()[0].strip()
+        return ""
+
+    def _extract_field_name_lookup(self, field_name: str) -> str:
+        """
+        Extract the lookup key from a Field Name cell: text before the first '('.
+        Relaxed \\s*\\( handles malformed parentheticals.
+        """
+        match = re.match(r"^(.+?)\s*\(", str(field_name))
+        if match:
+            return re.sub(r'\s+', ' ', match.group(1)).strip()
+        return re.sub(r'\s+', ' ', str(field_name)).strip()
+
+    def extract_field_table(self, soup: BeautifulSoup) -> Optional[pd.DataFrame]:
+        """
+        Extract the field description table from the page.
+
+        Adds two derived columns after 'Field Name':
+          - 'Field Name lookup': text before '(' used for matching format tokens
+          - 'Variable Name': snake_case name extracted from parenthetical
+
+        Args:
+            soup: BeautifulSoup object of the page
+
+        Returns:
+            DataFrame with field descriptions or None if not found
+        """
+        tables = soup.find_all('table')
+
+        for table in tables:
+            headers = [th.get_text(strip=True).lower() for th in table.find_all('th')]
+
+            if 'field name' in ' '.join(headers) or 'field' in ' '.join(headers):
+                try:
+                    data = []
+                    rows = table.find_all('tr')
+
+                    if not rows:
+                        continue
+
+                    header_row = rows[0]
+                    headers = [th.get_text(strip=True) for th in header_row.find_all(['th', 'td'])]
+
+                    for row in rows[1:]:
+                        cells = row.find_all(['td', 'th'])
+                        if len(cells) >= len(headers):
+                            row_data = [self._get_cell_text_with_formatting(cell) for cell in cells[:len(headers)]]
+                            data.append(row_data)
+
+                    if data:
+                        df = pd.DataFrame(data, columns=headers)
+
+                        if 'Field Name' in df.columns:
+                            field_name_idx = df.columns.get_loc('Field Name')
+                            variable_names = [self._extract_variable_name(fn) for fn in df['Field Name']]
+                            lookup_names = [self._extract_field_name_lookup(fn) for fn in df['Field Name']]
+                            # Insert in order: Field Name lookup, then Variable Name
+                            df.insert(field_name_idx + 1, 'Field Name lookup', lookup_names)
+                            df.insert(field_name_idx + 2, 'Variable Name', variable_names)
+
+                        logger.info(f"Extracted field table: {len(df)} rows")
+                        return df
+
+                except Exception as e:
+                    logger.error(f"Error parsing field table: {e}")
+                    continue
+
+        logger.warning("No field description table found")
+        return None
+
+    def _apply_field_name_lookup_corrections(self, field_table: pd.DataFrame, log_type_name: str) -> pd.DataFrame:
+        """
+        Normalize the 'Field Name lookup' column to match format string tokens.
+
+        Applies global corrections first, then per-log-type corrections.
+        Keys are values as they appear in the field table; values are the corresponding
+        format string token.
+        """
+        if 'Field Name lookup' not in field_table.columns:
+            return field_table
+
+        corrections = dict(self.field_name_lookup_corrections_global)
+        corrections.update(self.field_name_lookup_corrections_per_log.get(log_type_name, {}))
+
+        if not corrections:
+            return field_table
+
+        field_table = field_table.copy()
+        field_table['Field Name lookup'] = field_table['Field Name lookup'].map(
+            lambda v: corrections.get(v, v)
+        )
+        return field_table
+
+    def _lookup_variable_names(self, tokens: List[str], field_table: pd.DataFrame) -> List[str]:
+        """
+        Replace each format token with its variable name from the field table.
+
+        Lookup order:
+          1. DG Hierarchy regex (handles all 3 naming patterns)
+          2. Exact match in 'Field Name lookup' column
+             - Found + non-empty Variable Name → return Variable Name
+             - Found + empty Variable Name → pass token through unchanged,
+               AND write the token back to that row's Variable Name column
+          3. Not found → pass token through unchanged
+
+        Mutates field_table in-place to fill Variable Name for pass-through tokens
+        whose row was found but had an empty Variable Name.
+        """
+        if field_table is None or 'Field Name lookup' not in field_table.columns:
+            return tokens
+
+        # Build exact index: Field Name lookup value → row index
+        lookup_index: Dict[str, int] = {}
+        for idx, val in enumerate(field_table['Field Name lookup']):
+            lookup_key = str(val) if not pd.isna(val) else ""
+            if lookup_key and lookup_key not in lookup_index:
+                lookup_index[lookup_key] = idx
+
+        result = []
+        for token in tokens:
+            # 1. DG Hierarchy regex (all 3 patterns)
+            dg_match = re.match(
+                r"(?:Device Group Hierarchy(?:\s+Level)?|DG Hierarchy Level)\s+(\d+)",
+                token
+            )
+            if dg_match:
+                result.append(f"dg_hier_level_{dg_match.group(1)}")
+                continue
+
+            # 2. Table lookup: exact match in 'Field Name lookup' column
+            row_idx = lookup_index.get(token)
+            if row_idx is not None:
+                var_name = field_table.at[row_idx, 'Variable Name']
+                var_name = "" if pd.isna(var_name) else str(var_name)
+                if var_name:
+                    result.append(var_name)
+                else:
+                    # Pass through unchanged; write token to Variable Name column
+                    field_table.at[row_idx, 'Variable Name'] = token
+                    result.append(token)
+                continue
+
+            # 3. Not found — pass through unchanged
+            result.append(token)
+
+        return result
+
+    def _apply_variable_name_corrections(
+        self,
+        tokens: List[str],
+        field_table: Optional[pd.DataFrame],
+        log_type_name: str
+    ) -> Tuple[List[str], Optional[pd.DataFrame]]:
+        """
+        Apply variable name corrections to both format tokens and the field table.
+
+        Global corrections are applied to all occurrences (replace-all semantics).
+        Per-log-type corrections are applied to the FIRST occurrence only in the token
+        list — this is intentional: GlobalProtect has "serialnumber" at two positions
+        and only the first should become "serial". Field table corrections always use
+        replace-all semantics regardless of global/per-log-type.
+
+        Args:
+            tokens: List of variable name tokens from _lookup_variable_names
+            field_table: Field table DataFrame (may be mutated in-place)
+            log_type_name: Name of the log type for per-log corrections
+
+        Returns:
+            (corrected_tokens, field_table)
+        """
+        global_corrections: Dict[str, str] = self.variable_name_corrections_global
+        per_log_corrections: Dict[str, str] = self.variable_name_corrections_per_log.get(log_type_name, {})
+
+        # Apply global corrections: replace all occurrences
+        corrected_tokens = [global_corrections.get(t, t) for t in tokens]
+
+        # Apply per-log corrections: first occurrence only for each key
+        for old, new_val in per_log_corrections.items():
+            try:
+                pos = corrected_tokens.index(old)
+                corrected_tokens[pos] = new_val
+            except ValueError:
+                pass  # key not in tokens for this log type — skip silently
+
+        # Apply both correction sets to field table Variable Name column (replace all)
+        if field_table is not None and 'Variable Name' in field_table.columns:
+            all_corrections: Dict[str, str] = dict(global_corrections)
+            all_corrections.update(per_log_corrections)
+            if all_corrections:
+                field_table = field_table.copy()
+                field_table['Variable Name'] = field_table['Variable Name'].map(
+                    lambda v: all_corrections.get(v, v) if (not pd.isna(v) and str(v) != "") else v
+                )
+
+        return corrected_tokens, field_table
 
     def _get_cell_text_with_formatting(self, cell) -> str:
         """
@@ -408,64 +513,6 @@ class PaloAltoLogScraper:
         lines = [line.strip() for line in text.split('\n')]
         return '\n'.join(lines).strip()
 
-    def extract_field_table(self, soup: BeautifulSoup) -> Optional[pd.DataFrame]:
-        """
-        Extract the field description table from the page
-
-        Args:
-            soup: BeautifulSoup object of the page
-
-        Returns:
-            DataFrame with field descriptions or None if not found
-        """
-        # Look for tables that contain field descriptions
-        tables = soup.find_all('table')
-
-        for table in tables:
-            # Check if this table contains field information
-            headers = [th.get_text(strip=True).lower() for th in table.find_all('th')]
-
-            # Look for tables with "field name" and "description" headers
-            if 'field name' in ' '.join(headers) or 'field' in ' '.join(headers):
-                try:
-                    # Extract table data
-                    data = []
-                    rows = table.find_all('tr')
-
-                    if not rows:
-                        continue
-
-                    # Get headers
-                    header_row = rows[0]
-                    headers = [th.get_text(strip=True) for th in header_row.find_all(['th', 'td'])]
-
-                    # Get data rows
-                    for row in rows[1:]:
-                        cells = row.find_all(['td', 'th'])
-                        if len(cells) >= len(headers):
-                            row_data = [self._get_cell_text_with_formatting(cell) for cell in cells[:len(headers)]]
-                            data.append(row_data)
-
-                    if data:
-                        df = pd.DataFrame(data, columns=headers)
-
-                        # Add Variable Name column extracted from Field Name
-                        if 'Field Name' in df.columns:
-                            variable_names = [self._extract_variable_name(fn) for fn in df['Field Name']]
-                            # Insert after Field Name column
-                            field_name_idx = df.columns.get_loc('Field Name')
-                            df.insert(field_name_idx + 1, 'Variable Name', variable_names)
-
-                        logger.info(f"Extracted field table: {len(df)} rows")
-                        return df
-
-                except Exception as e:
-                    logger.error(f"Error parsing field table: {e}")
-                    continue
-
-        logger.warning("No field description table found")
-        return None
-
     def scrape_log_type(self, log_type: dict, version_dir: str) -> bool:
         """
         Scrape a specific log type and save format and table files.
@@ -485,33 +532,39 @@ class PaloAltoLogScraper:
             logger.error(f"Failed to fetch page for {log_type['name']}")
             return False
 
-        # Extract format string and field table
-        format_string = self.extract_format_string(soup)
+        raw_format_string, format_tokens = self.extract_format_string(soup, log_type['name'])
         field_table = self.extract_field_table(soup)
 
         if field_table is not None:
-            field_table = self._apply_field_table_corrections(field_table)
-            table_filepath = os.path.join(version_dir, f"{log_type['name']}_fields.csv")
+            field_table = self._apply_field_name_lookup_corrections(field_table, log_type['name'])
+
+        if format_tokens and field_table is not None:
+            output_tokens = self._lookup_variable_names(format_tokens, field_table)
+            output_tokens, field_table = self._apply_variable_name_corrections(
+                output_tokens, field_table, log_type['name']
+            )
+        elif format_tokens:
+            output_tokens = format_tokens
+        else:
+            output_tokens = []
+
+        file_prefix = re.sub(r'_Log$', '', log_type['name'])
+
+        if field_table is not None:
+            table_filepath = os.path.join(version_dir, f"{file_prefix}_fields.csv")
             try:
                 field_table.to_csv(table_filepath, index=False)
                 logger.info(f"Saved field table to {table_filepath}")
             except Exception as e:
                 logger.error(f"Error saving field table: {e}")
 
-        if format_string:
-            format_filepath = os.path.join(version_dir, f"{log_type['name']}_format.csv")
-
-            if field_table is not None:
-                name_map = self._build_name_map(field_table)
-                items = self._transform_format_string(format_string, name_map)
-                items = self._apply_per_log_corrections(items, log_type['name'])
-                transformed = ",".join(f'"{item}"' for item in items)
-            else:
-                transformed = None
+        if raw_format_string:
+            format_filepath = os.path.join(version_dir, f"{file_prefix}_format.csv")
+            transformed = ",".join(f'"{t}"' for t in output_tokens) if output_tokens else None
 
             try:
                 with open(format_filepath, 'w', encoding='utf-8') as f:
-                    f.write(f"{format_string}\n")
+                    f.write(f"{raw_format_string}\n")
                     if transformed:
                         f.write(f"{transformed}\n")
                 logger.info(f"Saved format to {format_filepath}"
@@ -520,12 +573,12 @@ class PaloAltoLogScraper:
                 logger.error(f"Error saving format file: {e}")
 
         # Warn on partial results
-        if format_string is None and field_table is not None:
+        if raw_format_string is None and field_table is not None:
             logger.warning(f"{log_type['name']}: field table saved but no format string found")
-        elif format_string is not None and field_table is None:
+        elif raw_format_string is not None and field_table is None:
             logger.warning(f"{log_type['name']}: format string saved without field table (no transformation)")
 
-        return format_string is not None and field_table is not None
+        return raw_format_string is not None and field_table is not None
 
     def _build_consolidated_matrix(self, version_dir: str, log_types: list) -> None:
         """Build the consolidated position × log type matrix and save to panos_syslog_fields.csv.
@@ -540,7 +593,8 @@ class PaloAltoLogScraper:
 
         for log_type in log_types:
             name = log_type['name']
-            format_path = os.path.join(version_dir, f"{name}_format.csv")
+            file_prefix = re.sub(r'_Log$', '', name)
+            format_path = os.path.join(version_dir, f"{file_prefix}_format.csv")
 
             if not os.path.exists(format_path):
                 logger.warning(f"Matrix: no format file for {name}, skipping column")
@@ -554,17 +608,17 @@ class PaloAltoLogScraper:
                 continue
 
             if len(lines) < 2 or not lines[1].strip():
-                logger.warning(f"Matrix: {name}_format.csv has no transformed line 2, skipping column")
+                logger.warning(f"Matrix: {file_prefix}_format.csv has no transformed line 2, skipping column")
                 continue
 
             try:
                 tokens = next(csv.reader([lines[1].strip()]))
             except Exception as e:
-                logger.error(f"Matrix: cannot parse {name}_format.csv line 2: {e}")
+                logger.error(f"Matrix: cannot parse {file_prefix}_format.csv line 2: {e}")
                 continue
 
-            # Display name: strip _Log suffix, replace remaining underscores with spaces
-            display_name = re.sub(r'_Log$', '', name).replace('_', ' ')
+            # Display name: replace underscores with spaces
+            display_name = file_prefix.replace('_', ' ')
             ordered_names.append(display_name)
             columns[display_name] = tokens
 

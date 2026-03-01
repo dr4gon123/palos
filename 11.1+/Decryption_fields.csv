@@ -1,0 +1,229 @@
+Field Name,Field Name lookup,Variable Name,Description
+Receive Time (receive_time or cef-formatted-receive_time),Receive Time,receive_time,Time the log was received at the management plane.
+Serial Number (serial),Serial Number,serial,Serial number of the firewall that generated the log.
+Type (type),Type,type,Specifies the type of log; value is DECRYPTION.
+Threat/ContentType (subtype),Threat/Content Type,subtype,Not used in the Decryption log.
+Config Version (config_ver),Config Version,config_ver,The software version.
+Generate Time (time_generated),Generate Time,time_generated,Time the log was generated on the dataplane.
+Source Address (src),Source Address,src,Original session source IP address.
+Destination Address (dst),Destination Address,dst,Original session destination IP address.
+NAT Source IP (natsrc),NAT Source IP,natsrc,"If Source NAT performed, the post-NAT Source IP address."
+NAT Destination IP (natdst),NAT Destination IP,natdst,"If Destination NAT performed, the post-NAT Destination IP address."
+Rule (rule),Rule,rule,Security policy rule that controls the session traffic.
+Source User (srcuser),Source User,srcuser,Username of the user who initiated the session.
+Destination User (dstuser),Destination User,dstuser,Username of the user to which the session was destined.
+Application (app),Application,app,Application associated with the session.
+Virtual System (vsys),Virtual System,vsys,Virtual System associated with the session.
+Source Zone (from),Source Zone,from,Zone the session was sourced from.
+Destination Zone (to),Destination Zone,to,Zone the session was destined to.
+Inbound Interface (inbound_if),Inbound Interface,inbound_if,Interface that the session was sourced from.
+Outbound Interface (outbound_if),Outbound Interface,outbound_if,Interface that the session was destined to.
+Log Action (logset),Log Action,logset,Log Forwarding profile applied to the session.
+Time Logged (time_received),Time Logged,time_received,The time the log was received.
+Session ID (sessionid),Session ID,sessionid,An internal numerical identifier applied to each session.
+Repeat Count (repeatcnt),Repeat Count,repeatcnt,"Number of sessions with the same Source IP, Destination IP, Application, and Content/Threat Type seen within 5 seconds."
+Source Port (sport),Source Port,sport,Source port utilized by the session.
+Destination Port (dport),Destination Port,dport,Destination port utilized by the session.
+NAT Source Port (natsport),NAT Source Port,natsport,Post-NAT source port.
+NAT Destination Port (natdport),NAT Destination Port,natdport,Post-NAT destination port.
+Flags (flags),Flags,flags,"32-bit field that provides details on session; this field can be decoded by AND-ing the values with the logged value:
+
+0x80000000—session has a packet capture (PCAP)
+
+0x40000000—option is enabled to allow a client to use multiple paths to connect to a destination host
+
+0x20000000—file is submitted to WildFire for a verdict
+
+0x10000000—enterprise credential submission by end user detected
+
+0x08000000— source for the flow is on the allow list and not subject to recon protection
+
+0x02000000—IPv6 session
+
+0x01000000—SSL session is decrypted (SSL Proxy)
+
+0x00800000—session is denied via URL filtering
+
+0x00400000—session has a NAT translation performed
+
+0x00200000—user information for the session was captured through Authentication Portal
+
+0x00100000—application traffic is on a non-standard destination port
+
+0x00080000 —X-Forwarded-For value from a proxy is in the source user field
+
+0x00040000—log corresponds to a transaction within a http proxy session (Proxy Transaction)
+
+0x00020000—Client to Server flow is subject to policy based forwarding
+
+0x00010000—Server to Client flow is subject to policy based forwarding
+
+0x00008000—session is a container page access (Container Page)
+
+0x00002000—session has a temporary match on a rule for implicit application dependency handling. Available in PAN-OS 5.0.0 and above.
+
+0x00000800—symmetric return is used to forward traffic for this session
+
+0x00000400—decrypted traffic is being sent out clear text through a mirror port
+
+0x00000100—payload of the outer tunnel is being inspected"
+IP Protocol (proto),IP Protocol,proto,IP protocol associated with the session.
+Action (action),Action,action,"Action taken for the session; possible values are:
+
+allow—session was allowed by policy
+
+deny—session was denied by policy
+
+drop—session was dropped silently
+
+drop ICMP—session was silently dropped with an ICMP unreachable message to the host or application
+
+reset both—session was terminated and a TCP reset is sent to both the sides of the connection
+
+reset client—session was terminated and a TCP reset is sent to the client
+
+reset server—session was terminated and a TCP reset is sent to the server"
+Tunnel (tunnel),Tunnel,tunnel,Type of tunnel.
+Source VM UUID (src_uuid),Source VM UUID,src_uuid,The source universal unique identifier for a guest virtual machine in the VMware NSX environment.
+Destination VM UUID (dst_uuid),Destination VM UUID,dst_uuid,The destination universal unique identifier for a guest virtual machine in the VMware NSX environment.
+UUID for rule (rule_uuid),UUID for rule,rule_uuid,The UUID that permanently identifies the rule.
+Stage for Client to Firewall (hs_stage_c2f),Stage for Client to Firewall,hs_stage_c2f,"The stage of the TLS handshake from the client to the firewall, for example, Client Hello, Server Hello, Certificate, Client/Server key exchange, etc."
+Stage for Firewall to Server (hs_stage_f2s),Stage for Firewall to Server,hs_stage_f2s,The stage of the TLS handshake from the firewall to the server.
+TLS Version (tls_version),TLS Version,tls_version,The version of TLS protocol used for the session.
+Key Exchange Algorithm (tls_keyxchg),Key Exchange Algorithm,tls_keyxchg,The key exchange algorithm used for the session.
+Encryption Algorithm (tls_enc),Encryption Algorithm,tls_enc,"The algorithm used to encrypt the session data, such as AES-128-CBC, AES-256-GCM, etc."
+Hash Algorithm (tls_auth),Hash Algorithm,tls_auth,"The authentication algorithm used for the session, for example, SHA, SHA256, SHA384, etc."
+Policy Name (policy_name),Policy Name,policy_name,The name of the Decryption policy associated with the session.
+Elliptic Curve (ec_curve),Elliptic Curve,ec_curve,The elliptic cryptography curve that the client and server negotiate and use for connections that use ECDHE cipher suites.
+Error Index (err_index),Error Index,err_index,"The type of error that occurred: Cipher, Resource, Resume, Version, Protocol, Certificate, Feature, or HSM."
+Root Status (root_status),Root Status,root_status,"The status of the root certificate, for example, trusted, untrusted, or uninspected."
+Chain Status (chain_status),Chain Status,chain_status,"Whether the chain is trusted. Values are:
+
+Uninspected
+
+Untrusted
+
+Trusted
+
+Incomplete"
+Proxy Type (proxy_type),Proxy Type,proxy_type,"The Decryption proxy type, such as Forward for Forward Proxy, Inbound for Inbound Inspection, No Decrypt for undecrypted traffic, GlobalProtect, etc."
+Certificate Serial Number (cert_serial),Certificate Serial Number,cert_serial,The unique identifier of the certificate (generated by the certificate issuer).
+Certificate Fingerprint (fingerprint),Fingerprint,fingerprint,A hash of the certificate in x509 binary format.
+Certificate Start Date (notbefore),Certificate Start Date,notbefore,The time the certificate became valid (certificate in invalid before this time).
+Certificate End Date (notafter),Certificate End Date,notafter,The time the certificate expires (certificate becomes invalid after this time).
+Certificate Version (cert_ver),Certificate Version,cert_ver,"The certificate version (V1, V2, or V3)."
+Certificate Size (cert_size),Certificate Size,cert_size,The certificate key size.
+Common Name Length (cn_len),Common Name Length,cn_len,The length of the subject common name.
+Issuer Common Name Length (issuer_len),Issuer Common Name Length,issuer_len,The length of the issuer common name.
+Root Common Name Length (rootcn_len),Root Common Name Length,rootcn_len,The length of the root common name.
+SNI Length (sni_len),SNI Length,sni_len,The length of the Server Name Indication (hostname).
+Certificate Flags (cert_flags),Certificate Flags,cert_flags,"The certificate flags can return seven values:
+
+Session is resumed (b_resume_session)
+
+Certificate (subject) common name is truncated (b_cert_cn_truncated)
+
+Issuer common name is truncated (b_issuer_cn_truncated)
+
+Root common name is truncated (b_root_cn_truncated)
+
+Server Name Indication (SNI) is truncated (b_sni_truncated)
+
+Certificate type, RSA or ECDSA (b_cert_type)
+
+Unused (padding3)"
+Subject Common Name (cn),Subject Common Name,cn,The domain name (the name of the server that the certificate protects).
+Issuer Common Name (issuer_cn),Issuer Subject Common Name,issuer_cn,The name of the organization that verified the certificate’s contents.
+Root Common Name (root_cn),Root Subject Common Name,root_cn,The name of the root certificate authority.
+"Server Name Indication
+(sni)",Server Name Indication,sni,The hostname of the server that the client is trying to contact. Using SNIs enables a server to host multiple websites and present multiple certificates on the same IP address and TCP port because each website has a unique SNI.
+Error (error),Error,error,A string showing the error that has occurred in the event.
+Container ID (container_id),Container ID,container_id,A unique alphanumeric string that identifies the container if the firewall runs in a cloud container.
+POD Namespace (pod_namespace),POD Namespace,pod_namespace,The name of the Kubernetes pod namespace.
+POD Name (pod_name),POD Name,pod_name,The name of the kubernetes pod.
+Source External Dynamic List (src_edl),Source External Dynamic List,src_edl,The name of the external dynamic list that contains the source IP address of the traffic.
+Destination External Dynamic List (dst_edl),Destination External Dynamic List,dst_edl,The name of the external dynamic list that contains the destination IP address of the traffic.
+Source Dynamic Address Group (src_dag),Source Dynamic Address Group,src_dag,The dynamic address group that Device-ID identifies as the source of the traffic.
+Destination Dynamic Address Group (dst_dag),Destination Dynamic Address Group,dst_dag,The dynamic address group that Device-ID identifies as the destination for the traffic.
+High Resolution Timestamp (high_res_timestamp),High Resolution Timestamp,high_res_timestamp,"Time in milliseconds the log was received at the management plane.
+
+The format for this field is YYYY-MM-DDThh:ss:sssTZD:
+
+YYYY—Four digit year
+
+MM—Two-digit month
+
+DD—Two-digit day of the month (01 through 31)
+
+T—Indicator for the beginning of the timestamp
+
+hh—Two-digit hour using 24-hour time (00 through 23)
+
+mm—Two-digit minute (00 through 59)
+
+ss—Two-digit second (00 through 60)
+
+sss—One or more digits for millisecond
+
+TZD—Time zone designator (+hh:mm or -hh:mm)
+
+FM Dita Overlay for Notes Component
+
+The High Resolution Timestamp is supported for logs received from managed firewalls running PAN-OS 10.0 and later releases. Logs received from managed firewalls running PAN-OS 9.1 and earlier releases display a 1969-12-31T16:00:00:000-8:00 timestamp regardless of when the log was received."
+Source Device Category (src_category),Source Device Category,src_category,The category for the device that Device-ID identifies as the source of the traffic.
+Source Device Profile (src_profile),Source Device Profile,src_profile,The device profile for the device that Device-ID identifies as the source of the traffic.
+Source Device Model (src_model),Source Device Model,src_model,The model of the device that Device-ID identifies as the source of the traffic.
+Source Device Vendor (src_vendor),Source Device Vendor,src_vendor,The vendor of the device that Device-ID identifies as the source of the traffic.
+Source Device OS Family (src_osfamily),Source Device OS Family,src_osfamily,The operating system type for the device that Device-ID identifies as the source of the traffic.
+Source Device OS Version (src_osversion),Source Device OS Version,src_osversion,The version of the operating system for the device that Device-ID identifies as the source of the traffic.
+Source Hostname (src_host),Source Hostname,src_host,The hostname of the device that Device-ID identifies as the source of the traffic.
+Source MAC Address (src_mac),Source MAC Address,src_mac,The MAC address for the device that Device-ID identifies as the source of the traffic.
+Destination Device Category (dst_category),Destination Device Category,dst_category,The category for the device that Device-ID identifies as the destination for the traffic.
+Destination Device Profile (dst_profile),Destination Device Profile,dst_profile,The device profile for the device that Device-ID identifies as the destination for the traffic.
+Destination Device Model (dst_model),Destination Device Model,dst_model,The model of the device that Device-ID identifies as the destination for the traffic.
+Destination Device Vendor (dst_vendor),Destination Device Vendor,dst_vendor,The vendor of the device that Device-ID identifies as the destination for the traffic.
+Destination Device OS Family (dst_osfamily),Destination Device OS Family,dst_osfamily,The operating system type for the device that Device-ID identifies as the destination for the traffic.
+Destination Device OS Version (dst_osversion),Destination Device OS Version,dst_osversion,The version of the operating system for the device that Device-ID identifies as the destination for the traffic.
+Destination Hostname (dst_host),Destination Hostname,dst_host,The hostname of the device that Device-ID identifies as the destination for the traffic.
+Destination MAC Address (dst_mac),Destination MAC Address,dst_mac,The MAC address for the device that Device-ID identifies as the destination for the traffic.
+Sequence Number (seqno),Sequence Number,seqno,A 64-bit log entry identifier incremented sequentially; each log type has unique number space.
+Action Flags (actionflags),Action Flags,actionflags,A bit field indicating if the log was forwarded to Panorama.
+Device Group Hierarchy (dg_hier_level_1 to dg_hier_level_4),Device Group Hierarchy,dg_hier_level_1,"A sequence of identification numbers that indicate the device group’s location within a device group hierarchy. The firewall (or virtual system) generating the log includes the identification number of each ancestor in its device group hierarchy. The shared device group (level 0) is not included in this structure.
+
+If the log values are 12, 34, 45, 0, it means that the log was generated by a firewall (or virtual system) that belongs to device group 45, and its ancestors are 34, and 12. To view the device group names that correspond to the value 12, 34 or 45, use one of the following methods:
+
+API query: FM Dita Overlay for Code
+
+/api/?type=op&cmd=<show><dg-hierarchy></dg-hierarchy></show>"
+Virtual System Name (vsys_name),Virtual System Name,vsys_name,The name of the virtual system associated with the session; only valid on firewalls enabled for multiple virtual systems.
+Device Name (device_name),Device Name,device_name,The hostname of the firewall on which the session was logged.
+Virtual System ID (vsys_id),Virtual System ID,vsys_id,A unique identifier for a virtual system on a Palo Alto Networks firewall.
+Application Subcategory (subcategory_of_app),Application Subcategory,subcategory_of_app,The application subcategory specified in the application configuration properties.
+Application Category (category_of_app),Application Category,category_of_app,"The application category specified in the application configuration properties. Values are:
+
+business-systems
+
+collaboration
+
+general-internet
+
+media
+
+networking
+
+saas"
+Application Technology (technology_of_app),Application Technology,technology_of_app,"The application technology specified in the application configuration properties. Values are:
+
+browser-based
+
+client-server
+
+network-protocol
+
+peer-to-peer"
+Application Risk (risk_of_app),Application Risk,risk_of_app,Risk level associated with the application (1=lowest to 5=highest).
+Application Characteristic (characteristic_of_app),Application Characteristic,characteristic_of_app,Comma-separated list of applicable characteristic of the application
+Application Container (container_of_app),Application Container,container_of_app,The parent application for an application.
+Application SaaS (is_saas_of_app),Application SaaS,is_saas_of_app,Displays 1 if a SaaS application or 0 if not a SaaS application.
+Application Sanctioned State (sanctioned_state_of_app),Application Sanctioned State,sanctioned_state_of_app,Displays 1 if application is sanctioned or 0 if application is not sanctioned.
+Cluster Name (cluster_name),Cluster Name,cluster_name,(11.1 and later releases) Name of the CN-Series firewall cluster.

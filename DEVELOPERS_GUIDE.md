@@ -21,9 +21,9 @@ Data flows through five stages per log type:
 ```
 1. Fetch         HTTP GET → BeautifulSoup
 2. Extract       format string + field table from HTML
-3. Correct       fix field table Variable Name column
-4. Map           build long-name → variable-name dict
-5. Transform     apply map to format string, apply per-log fixes
+3. Correct       normalize Field Name lookup column
+4. Lookup        map format tokens → variable names via field table
+5. Correct       fix variable names in token list + field table
 ```
 
 Stages 3–5 are where the exceptions system lives.
@@ -34,65 +34,66 @@ Stages 3–5 are where the exceptions system lives.
 
 Each log type goes through `scrape_log_type()`, which calls the pipeline stages in order:
 
-### Stage 1 — `extract_format_string(soup)`
+### Stage 1 — `extract_format_string(soup, log_type_name)`
 
-Regex-searches the page text for a `Format:` section and returns the raw comma-separated
-field list as a string. Example output:
+Regex-searches the page text for a `Format:` section. Splits the result on commas to produce
+a token list, applies `_apply_per_log_corrections()` to fix format-string-level bugs (e.g.
+malformed separators), and returns both the raw string (for CSV line 1) and the corrected
+token list. Example token list after splitting:
 
 ```
-FUTURE_USE, Receive Time, Serial Number, Type, Threat/Content Type, FUTURE_USE, Generated Time, ...
+["FUTURE_USE", "Receive Time", "Serial Number", "Type", "Threat/Content Type", ...]
 ```
 
 ### Stage 2 — `extract_field_table(soup)`
 
 Finds the HTML table with a "field name" header, parses it with BeautifulSoup, and returns
-a DataFrame. A `Variable Name` column is inserted after `Field Name` using
-`_extract_variable_name()`, which pulls the first word from the parenthetical in each field
-name. Fields with no parenthetical get an empty string.
+a DataFrame. Two columns are inserted after `Field Name`:
 
-`_get_cell_text_with_formatting()` is used for cell content to preserve intentional line
-breaks from HTML block elements while collapsing source-formatting whitespace.
+- `Field Name lookup`: text before `(` in the field name, used for matching format tokens.
+  Uses relaxed `\s*\(` regex to handle malformed parentheticals like `"Server Name Indication(sni)"`.
+- `Variable Name`: first word inside the parenthetical (e.g. `"Receive Time (receive_time)"` → `receive_time`).
+  Fields with no parenthetical get an empty string — this is acceptable.
 
-### Stage 3 — `_apply_field_table_corrections(field_table)`
+`_get_cell_text_with_formatting()` preserves intentional HTML line breaks while collapsing
+source-formatting whitespace.
 
-**This stage runs on the field table before it is saved to CSV and before name_map is built.**
+### Stage 3 — `_apply_field_name_lookup_corrections(field_table, log_type_name)`
 
-For each row:
+**This stage normalizes the `Field Name lookup` column before lookup.**
 
-- If `Variable Name` is **non-empty**: apply `token_corrections` lookup (fixes typos/truncations in PAN-OS parentheticals)
-- If `Variable Name` is **empty**: extract the long field name (text before the first `(`), then look up in `field_table_overrides` (fills Audit_Log's fields that have no parenthetical in PAN-OS docs)
+Applies `field_name_lookup_corrections.global` then `field_name_lookup_corrections.per_log_type`
+to the `Field Name lookup` column. This bridges cases where the field table's field name
+differs from the format string token — for example, "Security Rule UUID" in the field table maps
+to "Rule UUID" in the format string.
 
-The corrected DataFrame is what gets saved to `*_fields.csv` and what feeds Stage 4.
+A correction is only added here when the table key is NEVER the correct format token for any
+log type. If a log type uses the table key as its format token, the global correction would
+break that log type; in that case the format token passes through lookup unchanged and is caught
+downstream by `variable_name_corrections`.
 
-### Stage 4 — `_build_name_map(field_table)`
+The corrected field table is passed to Stage 4 and eventually saved to `*_fields.csv`.
 
-Builds a `{long_name: variable_name}` dictionary from the (now corrected) field table.
-For rows **with** a parenthetical, the text before the `(` becomes the key in three forms:
-original, normalized whitespace, and lowercase. For rows **without** a parenthetical (e.g.
-Audit_Log fields filled by `field_table_overrides`), the full field name is used as the key
-directly — this ensures those Variable Names feed into format string transformation without
-needing a separate `global_name_overrides` entry. Finally, `global_name_overrides` is merged
-in with precedence over auto-detected mappings.
+### Stage 4 — `_lookup_variable_names(tokens, field_table)`
 
-### Stage 5 — `_transform_format_string(format_string, name_map)` + `_apply_per_log_corrections(items, log_type_name)`
+Replaces each format token with its variable name from the field table:
 
-`_transform_format_string` splits the format string on commas and for each token:
+1. **DG Hierarchy regex** (all 3 naming patterns, handled first):
+   `(?:Device Group Hierarchy(?:\s+Level)?|DG Hierarchy Level)\s+(\d+)` → `dg_hier_level_N`
+2. **Table lookup**: search the `Field Name lookup` column for the token
+   - Found + non-empty Variable Name → return the Variable Name
+   - Found + empty Variable Name → write the token back to the `Variable Name` column, pass token through unchanged
+   - Not found → pass token through unchanged
 
-1. Handles `Device Group Hierarchy Level N` via a dedicated regex → `dg_hier_level_N`
-2. Tries direct match, normalized match, and lowercase match against `name_map`
-3. Falls back to the original token (e.g. `FUTURE_USE`) if no match found
-4. Applies `token_corrections` to every output token
+Pass-through tokens (raw long names like "Generated Time") are caught in Stage 5.
 
-The `Device Group Hierarchy Level N` regex is the only hardcoded special case remaining.
-All other name mismatches (including `"Protocol"` → `proto`) are handled via
-`global_name_overrides` in `paloalto_scraper_exceptions.yaml`.
+### Stage 5 — `_apply_variable_name_corrections(tokens, field_table, log_type_name)`
 
-`_apply_per_log_corrections` applies position- or value-based fixes last:
+Applies variable name corrections to both the token list and the `Variable Name` column:
 
-- `strip_leading_future_use`: removes position 0 if it is `FUTURE_USE` (currently disabled)
-- `match`: locates the token by value (position-independent); `position` is the fallback
-- `new`: replaces the selected token with a specific value
-- `split_into`: expands the selected token into a list of tokens
+- `variable_name_corrections.global`: applied to all occurrences in the token list (replace-all)
+- `variable_name_corrections.per_log_type`: applied to the **first occurrence only** in the token list
+- Both correction sets are applied to the field table `Variable Name` column with replace-all semantics
 
 ---
 
@@ -100,13 +101,14 @@ All other name mismatches (including `"Protocol"` → `proto`) are handled via
 
 | Method | What it does | Notable edge cases handled |
 |--------|-------------|---------------------------|
-| `extract_format_string(soup)` | Regex-extracts the `Format:` section from page text | Multi-line format strings via `DOTALL` flag |
-| `extract_field_table(soup)` | Finds table with "field name" header, returns DataFrame with Variable Name column | Tables that match by substring ("field" or "field name") |
-| `_extract_variable_name(field_name)` | Pulls first word from parenthetical | "x or y" in parenthetical → takes only first word; no parenthetical → returns `""` |
-| `_apply_field_table_corrections(field_table)` | Corrects Variable Name column in field table | token_corrections for non-empty; field_table_overrides for empty |
-| `_build_name_map(field_table)` | Builds `{long_name: var_name}` dict | Parenthetical rows: three key forms; no-parenthetical rows: full field name as key; global_name_overrides wins |
-| `_transform_format_string(format_string, name_map)` | Replaces long names with variable names | DG hierarchy regex; Protocol special case; token_corrections on all outputs |
-| `_apply_per_log_corrections(items, log_type_name)` | Position- or value-based fixes per log type | `match` key for value-based lookup; `position` for index-based; bounds checked |
+| `extract_format_string(soup, log_type_name)` | Regex-extracts `Format:` section; splits tokens; applies per-log corrections | Returns `(raw_string, list[str])`; multi-line format strings via `DOTALL` |
+| `extract_field_table(soup)` | Finds table with "field name" header; returns DataFrame with `Field Name lookup` and `Variable Name` columns | Relaxed `\s*\(` handles malformed parentheticals; empty Variable Names acceptable |
+| `_extract_variable_name(field_name)` | Pulls first word from parenthetical | `\s*\(` handles no-space cases; "x or y" → takes first word; no parenthetical → `""` |
+| `_extract_field_name_lookup(field_name)` | Extracts text before `(` as lookup key | `\s*\(` handles malformed cases; strips extra whitespace |
+| `_apply_field_name_lookup_corrections(field_table, log_type_name)` | Normalizes `Field Name lookup` column to match format tokens | Global then per-log-type corrections |
+| `_lookup_variable_names(tokens, field_table)` | Maps format tokens to variable names via field table | DG hierarchy regex first; writes pass-through tokens to Variable Name column when row found but empty |
+| `_apply_variable_name_corrections(tokens, field_table, log_type_name)` | Corrects variable names in both token list and field table | Global: replace-all; per-log-type: first-occurrence on token list, replace-all on field table |
+| `_apply_per_log_corrections(tokens, log_type_name)` | Position- or value-based fixes on raw format tokens | `match` key for value-based (preferred); `position` for index-based; bounds checked |
 | `_get_cell_text_with_formatting(cell)` | HTML cell → text preserving intentional line breaks | Block elements get `\n`; source whitespace collapsed |
 
 ---
@@ -116,77 +118,73 @@ All other name mismatches (including `"Protocol"` → `proto`) are handled via
 All exceptions live in `paloalto_scraper_exceptions.yaml`. Add a comment with the log type
 and the reason for each new entry.
 
-### Token correction (typo in Variable Name parenthetical)
+### Variable name correction (typo or truncation in Variable Name parenthetical)
 
-The PAN-OS field table has a wrong or truncated variable name in parentheses.
-
-```yaml
-token_corrections:
-  "wrong_name": "correct_name"  # LogType: explanation
-```
-
-This is applied to both `*_fields.csv` Variable Name column and the transformed format string.
-
-### Missing variable name (field has no parenthetical in PAN-OS docs)
-
-The PAN-OS field table row has no `(variable_name)` in the Field Name column.
+The PAN-OS field table has a wrong or truncated variable name in parentheses, or a format
+token fails lookup and passes through as a raw long name.
 
 ```yaml
-field_table_overrides:
-  "Long Field Name": "variable_name"  # LogType: cross-referenced from OtherLog
+variable_name_corrections:
+  global:
+    "wrong_or_raw_name": "correct_variable_name"  # LogType: explanation
 ```
 
-Use the exact long field name string as the key. Cross-reference the correct variable name
-from another log type's field table that does have the parenthetical for the same field.
-`field_table_overrides` fills the `*_fields.csv` Variable Name column **and** feeds into
-format string transformation (via `_build_name_map`'s no-parenthetical branch), but does
-**not** affect other log types' name maps.
+Applied to both `*_fields.csv` Variable Name column and the transformed format token list.
 
-### Long name not auto-mapped from format string
+### Field name lookup correction (table name differs from format token)
 
-The format string token (long name) does not match any parenthetical in the field table,
-due to casing differences or different phrasing.
+The format string uses a different name than what appears in the field table's `Field Name`
+column (before the parenthetical).
 
 ```yaml
-global_name_overrides:
-  "Exact Format String Token": "variable_name"  # LogType: reason
+field_name_lookup_corrections:
+  global:
+    "Field Name lookup value in table": "Token as it appears in format string"  # LogType: reason
 ```
 
-Use the exact string that appears in the format string as the key.
+Use the exact text that appears in the field table `Field Name lookup` column as the key.
 
-### Position-based fix (specific log type)
+### Per-log-type field name lookup correction
 
-A specific token at a specific position needs to be replaced or split, in a way that cannot
-be expressed as a name mapping.
+Same concept as global, but only applies to one log type:
 
 ```yaml
-per_log_corrections:
-  LogType_Name:
-    - position: N        # 0-indexed after any strip_leading_future_use removal
-      new: "variable_name"           # replace the token at position N
-      # OR
-      split_into: ["token_a", "token_b"]  # expand position N into multiple tokens
+field_name_lookup_corrections:
+  per_log_type:
+    LogType_Name:
+      "Field Name lookup value": "Format string token"
 ```
 
-Note: if `strip_leading_future_use: true`, the original position 0 (`FUTURE_USE`) is removed
-before per-log corrections run, so all positions shift down by 1.
+### Per-log-type variable name correction (first-occurrence semantics)
 
-### Value-based fix (token identified by content, not index)
+A specific variable name at a specific occurrence needs different treatment within one log type.
+Uses first-occurrence semantics on the token list (subsequent occurrences are unchanged).
 
-Use `match` instead of `position` when the target token has a known distinctive value
-and its index is not stable (e.g. it shifts depending on `strip_leading_future_use`):
+```yaml
+variable_name_corrections:
+  per_log_type:
+    LogType_Name:
+      "current_variable_name": "correct_variable_name"
+```
+
+### Raw format string correction (structural bug in PA docs)
+
+A specific token in the raw format string needs to be replaced or split, before any variable
+name lookup. Use when the format string itself is malformed (e.g. wrong separator).
 
 ```yaml
 per_log_corrections:
   LogType_Name:
-    - match: "Exact token value in transformed list"
-      split_into: ["token_a", "token_b"]   # expand into multiple tokens
+    - match: "Exact raw token value"   # value-based, preferred
+      split_into: ["token_a", "token_b"]  # expand into multiple tokens
       # OR
-      new: "correct_value"                 # replace with a single token
+      new: "replacement_token"             # replace with a single token
+    - position: N                       # 0-indexed, fallback when value not distinctive
+      new: "replacement_token"
 ```
 
-A warning is logged and the correction is skipped if the match value is not found.
-`match` takes precedence over `position` if both keys are present.
+`match` (value-based) is preferred over `position` (index-based) since it is independent
+of upstream format string changes. A warning is logged if the match value is not found.
 
 ---
 
@@ -200,7 +198,6 @@ A warning is logged and the correction is skipped if the match value is not foun
 | `settings.force_rescrape` | `false` | Skip existing version dirs unless true |
 | `settings.dry_run` | `false` | Print scrape plan without fetching |
 | `settings.output_dir` | `"."` | Root output directory |
-| `settings.strip_leading_future_use` | `false` | If true, removes leading `FUTURE_USE` from all format strings |
 | `versions[].name` | — | Version label used as output directory name |
 | `versions[].log_types[].name` | — | Log type name used as filename prefix |
 | `versions[].log_types[].url` | — | PAN-OS docs URL to scrape |
@@ -209,10 +206,11 @@ A warning is logged and the correction is skipped if the match value is not foun
 
 | Key | Effect |
 |-----|--------|
-| `global_name_overrides` | Merged into name_map; takes precedence over auto-detected mappings |
-| `field_table_overrides` | Fills empty Variable Names in field tables only (fields with no parenthetical in PA docs) |
-| `token_corrections` | Applied to Variable Name column and to all output format tokens |
-| `per_log_corrections` | Position- or value-based corrections keyed by log type name |
+| `field_name_lookup_corrections.global` | Normalizes field table lookup keys to match format tokens (global) |
+| `field_name_lookup_corrections.per_log_type` | Same, but only for the specified log type |
+| `variable_name_corrections.global` | Corrects variable names in token list (replace-all) and field table Variable Name column |
+| `variable_name_corrections.per_log_type` | Same, but first-occurrence semantics on the token list |
+| `per_log_corrections` | Raw format string token corrections applied at extraction time |
 
 ---
 

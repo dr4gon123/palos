@@ -1,0 +1,21 @@
+Field Name,Field Name lookup,Variable Name,Description
+Serial Number,Serial Number,serial,Serial number of the firewall or Panorama that generated the log.
+Generate Time,Generate Time,time_generated,Time the log was generated on the dataplane.
+Threat/Content Type (subtype),Threat/Content Type,subtype,"Specifies the type of log; value is AUDIT.
+
+Audit logs are a subytpe of System logs."
+Event ID,Event ID,eventid,"Source of the command that generated the audit log. Values include the following as a source of the command:
+
+
+cli—Firewall or Panorama command line.
+
+gui—Navigation in the firewall or Panorama web interface.
+
+gui-op—Operational command from the firewall or Panorama web interface.
+
+gnmi—OpenConfig plugin.
+
+rest—PAN-OS REST API."
+Object,Object,object,Name of the administrator which executed the command that generated the log.
+CLI Command,CLI Command,cmd,Command executed that generated the log.
+Severity,Severity,severity,"Completion status for the command that generated the log; value can be none, success, or failure."

@@ -6,124 +6,116 @@
 #   - The scraper's name-mapping logic misses some long-name → variable-name lookups
 #   - One PA doc page has a literal bug (period instead of comma as separator)
 
-# global_name_overrides: merged into name_map before format string transformation.
-# Keys are long field names (as they appear in the format string), values are variable names.
-# These supplement and take precedence over auto-detected mappings from each log type's field table.
-global_name_overrides:
-  # Time fields — PA docs inconsistent: "Generate Time" vs "Generated Time"
-  "Generated Time": "time_generated"
-  "Generate Time": "time_generated"
+# field_name_lookup_corrections: normalizes "Field Name lookup" column values to match
+# format string tokens. Applied before _lookup_variable_names.
+# Keys are values as they appear in the field table's "Field Name lookup" column.
+# Values are the corresponding token as it appears in the format string.
+#
+# IMPORTANT: Only add a global entry when the table key is NEVER the correct format token
+# for any log type. If ANY log type uses the table key as its format token, the global
+# correction would break that log type. Use per_log_type instead, or use
+# variable_name_corrections to catch the pass-through token downstream.
+field_name_lookup_corrections:
+  global:
+    "Threat/Content Name": "Threat ID"          # Data/Threat/URL: table name differs from format token
+    "Certificate Fingerprint": "Fingerprint"    # Decryption: table name differs from format token
+    "Gateway Priority": "Priority"              # GlobalProtect: table name differs from format token
+    "Gateway Name": "Gateway"                   # GlobalProtect: table name differs from format token
+    "Gateway Selection Method": "Selection Type" # GlobalProtect: table name differs from format token
+    "SSL Response Time": "Response Time"         # GlobalProtect: table name differs from format token
+    "IPv6 System Address": "IPv6 Source Address" # HIP_Match: table name differs from format token
+    "Threat/ContentType": "Threat/Content Type"  # Decryption: malformed key (missing space)
+    "Issuer Common Name": "Issuer Subject Common Name"   # Decryption: table name differs
+    "Root Common Name": "Root Subject Common Name"       # Decryption: table name differs
+    "End IP Address": "End User IP Address"      # GTP: table name differs from format token
+    "Serving Network MCC": "Serving Country MCC" # GTP: table name differs from format token
+    "Strict Checking": "Strict Check"            # Tunnel_Inspection: table name differs
+    "Security Rule UUID": "Rule UUID"            # Data/Threat/Traffic/Tunnel_Inspection/URL: table name differs
+    # DG Hierarchy variants handled by regex — no config entries needed
+    # "Server Name Indication" and "Tunnel Inspection Rule" handled by relaxed \s*\( regex
+    #
+    # Entries NOT here (would break other log types; handled via variable_name_corrections instead):
+    #   "Source Country" / "Destination Country" — Traffic has these as format tokens (srcloc/dstloc)
+    #   "IP Protocol" — Traffic/GTP/Tunnel_Inspection have "IP Protocol" and "Protocol" both appear
+    #   "High Resolution Timestamp" — most logs use "High Resolution Timestamp" as format token
+    #   "Threat/Content Type" — Traffic has this as format token; others use "Subtype"
+    #   "Tunnel Type" — Traffic/GlobalProtect use "Tunnel Type" as format token; others use "Tunnel"
+    #   "Dynamic User Group Name" — most logs use this; Tunnel_Inspection uses "Dynamic User Group"
+    #   "PCAP ID" — GTP/Tunnel_Inspection use "PCAP ID" as format token; others use "PCAP_ID"
+  per_log_type:
+    IP_Tag_Log:
+      "Serial Number": "Serial"        # IP_Tag: format uses abbreviated token
+    Threat_Log:
+      "Source address": "Source Address"        # Threat: field table has lowercase 'a', format has uppercase
+      "Destination address": "Destination Address"  # Threat: same case mismatch
+    URL_Filtering_Log:
+      "Source address": "Source Address"        # URL: same case mismatch as Threat
+      "Destination address": "Destination Address"  # URL: same case mismatch
+    Data_Filtering_Log:
+      "Source address": "Source Address"        # Data: same case mismatch as Threat
+      "Destination address": "Destination Address"  # Data: same case mismatch
 
-  # Threat/URL/Data log — tokens not matched by auto-detection
-  "Threat ID": "threatid"
-  "Source Location": "srcloc"
-  "Destination Location": "dstloc"
-  "Parent Start Time": "parent_start_time"
-  "PCAP_ID": "pcap_id"
+# variable_name_corrections: applied to variable names after _lookup_variable_names.
+# Corrects both the format token list AND the Variable Name column of the field table.
+# Applied in order: global first, then per_log_type for the current log type.
+variable_name_corrections:
+  global:
+    # Lookup failures: raw long names that pass through _lookup_variable_names unchanged
+    # (format string token not found in field table "Field Name lookup" column)
+    "Generated Time": "time_generated"   # most log types: format has "Generated Time", table has "Generate Time"
+    "Generate Time": "time_generated"    # IP_Tag_Log: format "Generate Time", table "Generated Time" (mismatch); also Audit_Log pass-through
+    "Parent Start Time": "parent_start_time"  # absent from most log type field tables
 
-  # Casing fixes — capitalized long names not matched case-insensitively in format string
-  "Subtype": "subtype"
-  "Serial": "serial"
-  "Fingerprint": "fingerprint"
-  "Priority": "priority"
-  "Gateway": "gateway"
+    # Pass-through tokens from removed field_name_lookup_corrections.global entries:
+    # These tokens fail lookup (table key differs from format token), so they pass through
+    # as raw long names and are caught here.
+    "Source Location": "srcloc"          # GTP/Threat/Tunnel_Inspection: format "Source Location", table "Source Country"
+    "Destination Location": "dstloc"     # GTP/Threat/Tunnel_Inspection: format "Destination Location", table "Destination Country"
+    "Protocol": "proto"                  # GTP/Traffic/Tunnel_Inspection: format "Protocol", table "IP Protocol"
+    "High Res Timestamp": "high_res_timestamp"  # Decryption/GlobalProtect: format "High Res Timestamp", table "High Resolution Timestamp"
+    "Subtype": "subtype"                 # Config/URL/Tunnel_Inspection: format "Subtype", table "Threat/Content Type"
+    "Tunnel": "tunnel"                   # Decryption/Tunnel_Inspection: format "Tunnel", table "Tunnel Type"
+    "Dynamic User Group": "dynusergroup_name"   # Tunnel_Inspection: format "Dynamic User Group", table "Dynamic User Group Name"
+    "PCAP_ID": "pcap_id"                 # Threat/URL/Data: format "PCAP_ID", table "PCAP ID"
 
-  # Traffic, GTP, Tunnel Inspection — format string uses "Protocol" (short); field table
-  # uses "IP Protocol (proto)" (with "IP " prefix). "Protocol" != "ip protocol" so
-  # auto-detection fails. Previously hardcoded in _transform_format_string; moved here.
-  "Protocol": "proto"
+    # MAC address capitalization: format uses "Source/Destination Mac Address" (mixed case),
+    # field tables use "Source/Destination MAC Address" (all-caps MAC) → lookup fails
+    "Source Mac Address": "src_mac"      # Traffic/Threat/URL/Data/Auth/Decryption: format "Mac", table "MAC"
+    "Destination Mac Address": "dst_mac" # same logs: same case mismatch
 
-  # GlobalProtect — unmapped long names
-  "High Res Timestamp": "high_res_timestamp"
-  "Selection Type": "selection_type"
-  "Response Time": "response_time"
+    # Audit_Log: fields with no parenthetical in PA docs → pass through as raw long names
+    "Serial Number": "serial"            # Audit_Log: no parenthetical; table "Serial Number" → placeholder
+    "Event ID": "eventid"                # Audit_Log: no parenthetical; also catches any other pass-throughs
+    "Object": "object"                   # Audit_Log: no parenthetical
+    "CLI Command": "cmd"                 # Audit_Log: no parenthetical
+    "Severity": "severity"               # Audit_Log: no parenthetical
 
-  # HIP Match
-  "IPv6 Source Address": "srcipv6"
+    # Field table typos: incorrect variable names produced by parenthetical extraction
+    "FUTURE_USER": "FUTURE_USE"          # User-ID log: typo in PA docs field table
+    "high_res": "high_res_timestamp"     # IP-Tag, User-ID, Auth, URL, Threat, etc.: truncated in PA field table
+    "event_id": "eventid"                # IP-Tag: underscore wrong in PA field table
+    "tunnelid/imsi": "tunnel_id/imsi"    # Traffic: PA field table lists without underscore
+    "Tunnel ID/IMSI": "tunnel_id/imsi"   # Tunnel_Inspection_Log: lookup failure (format "Tunnel ID/IMSI", table "Tunnel ID")
+    "Monitor Tag/IMEI": "monitortag/imei" # Tunnel_Inspection_Log: lookup failure
+    "tunnelid": "tunnel_id/imsi"         # Tunnel_Inspection_Log: parenthetical produces "tunnelid" without suffix
+    "monitortag": "monitortag/imei"      # Tunnel_Inspection_Log: parenthetical produces "monitortag" without suffix
+    "nsdsai_sst": "nssai_sst"            # GTP: "nsdsai" → "nssai" typo in PA docs
+    "nsdsai_sd": "nssai_sd"              # GTP: same typo
+  per_log_type: {}
 
-  # Device Group Hierarchy — PA uses 3 different naming patterns across log types.
-  # "Device Group Hierarchy Level N" is already handled by the code regex.
-  "DG Hierarchy Level 1": "dg_hier_level_1"
-  "DG Hierarchy Level 2": "dg_hier_level_2"
-  "DG Hierarchy Level 3": "dg_hier_level_3"
-  "DG Hierarchy Level 4": "dg_hier_level_4"
-  "Device Group Hierarchy 1": "dg_hier_level_1"
-  "Device Group Hierarchy 2": "dg_hier_level_2"
-  "Device Group Hierarchy 3": "dg_hier_level_3"
-  "Device Group Hierarchy 4": "dg_hier_level_4"
-
-  # Tunnel Inspection — unmapped long names
-  "Tunnel": "tunnel"
-  "Strict Check": "strict_check"
-  "Rule UUID": "rule_uuid"
-  "Dynamic User Group": "dynusergroup_name"
-
-  # Decryption — unmapped long names
-  "Threat/Content Type": "subtype"
-  "Issuer Subject Common Name": "issuer_cn"
-  "Root Subject Common Name": "root_cn"
-  "Server Name Indication": "sni"
-
-  # GTP — unmapped long names
-  "End User IP Address": "end_ip_adr"
-  "Serving Country MCC": "mcc"
-  "Tunnel Inspection Rule": "tunnel_insp_rule"
-
-# field_table_overrides: used ONLY to fill empty Variable Names in field tables
-# (fields whose PA docs Field Name has no parenthetical at all).
-# Keys are the long field name (text before the first "("), values are the correct variable name.
-# Cross-referenced from other log types whose field tables do include the parenthetical.
-# Unlike global_name_overrides, these are NOT merged into name_map and do NOT affect
-# format string transformation — they only fix the *_fields.csv Variable Name column.
-field_table_overrides:
-  # Audit_Log — PA docs omit variable names from the field table for these fields;
-  # names confirmed from System_Log and Config_Log field tables which do include them
-  "Serial Number": "serial"
-  "Generate Time": "time_generated"
-  "Event ID": "eventid"
-  "Object": "object"
-  "CLI Command": "cmd"
-  "Severity": "severity"
-
-# token_corrections: applied to each output token after format string transformation.
-# Keys are incorrect variable names that the scraper produces, values are the correct names.
-# Fixes PA docs typos in the Variable Name column of field tables.
-token_corrections:
-  "FUTURE_USER": "FUTURE_USE" # User-ID log: typo in PA docs field table
-  "high_res": "high_res_timestamp" # IP-Tag, User-ID, Auth, URL, Threat, etc.: truncated in PA field table
-  "event_id": "eventid" # IP-Tag: underscore wrong in PA field table
-  "tunnelid/imsi": "tunnel_id/imsi" # Traffic: PA field table lists without underscore (tunnelid/imsi); correct form adds underscore
-  # Tunnel_Inspection_Log only: its field table has "Tunnel ID (tunnelid)" / "Monitor Tag (monitortag)"
-  # without the /IMSI or /IMEI suffix. Two corrections are needed:
-  #   1. Format string: "Tunnel ID/IMSI" / "Monitor Tag/IMEI" fail auto-detection and remain as
-  #      raw long names — caught here and mapped to tunnel_id/imsi / monitortag/imei.
-  #   2. Fields CSV: parentheticals produce "tunnelid" / "monitortag" — corrected here to match.
-  # All other log types auto-detect correctly from their field tables.
-  "Tunnel ID/IMSI": "tunnel_id/imsi"
-  "Monitor Tag/IMEI": "monitortag/imei"
-  "tunnelid": "tunnel_id/imsi"
-  "monitortag": "monitortag/imei"
-  "nsdsai_sst": "nssai_sst" # GTP: "nsdsai" → "nssai" typo in PA docs
-  "nsdsai_sd": "nssai_sd" # GTP: same typo
-
-# per_log_corrections: corrections applied per log type, AFTER strip_leading_future_use
-# removes position 0. Two selector types are supported:
-#   - match: locate token by value (position-independent; preferred when token value is known)
-#   - position: locate token by 0-indexed position (fallback when value is not distinctive)
-# Two correction types are supported:
-#   - new: replace the selected token with a new value
-#   - split_into: replace the selected token with a list of tokens (expands length by len-1)
+# per_log_corrections: raw format string token corrections applied at extraction time.
+# These operate on the raw comma-split tokens BEFORE any variable name lookup.
+# Two selector types: match (value-based, preferred) or position (0-indexed, fragile).
+# Two correction types: new (replace token) or split_into (expand token into multiple).
 per_log_corrections:
-  GlobalProtect_Log:
-    # The format string has "Serial Number" at two positions: position 2 (firewall serial,
-    # should be "serial") and position 20 (machine serial, should be "serialnumber"). Both
-    # auto-map to "serialnumber" via the field table ("Serial Number (serialnumber)").
-    # match: finds the first occurrence (position 2) and replaces it; position 20 is untouched.
-    - match: "serialnumber"
-      new: "serial"
-
   Correlated_Events_Log:
-    # PA docs bug: period instead of comma produces single token "Source Address. Source User".
-    # match: used instead of position: so the fix is independent of strip_leading_future_use.
+    # PA docs bug: period instead of comma produces single token "Source Address. Source User"
     - match: "Source Address. Source User"
       split_into: ["src", "srcuser"]
+  GlobalProtect_Log:
+    # Format has "Serial Number" at two positions:
+    #   position 2  (firewall serial) → should map to Serial # (serial)   → serial
+    #   position 20 (machine serial)  → should map to Serial Number (serialnumber) → serialnumber
+    # Rename the first occurrence at extraction time so lookup finds the correct field table row.
+    - match: "Serial Number"
+      new: "Serial #"

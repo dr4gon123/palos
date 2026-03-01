@@ -7,144 +7,16 @@ mappings, and at least one literal PAN-OS docs structural bug. PALOS corrects al
 automatically through `paloalto_scraper_exceptions.yaml`. This file catalogs every known
 correction, its root cause, and the affected log types.
 
-Corrections are applied in four layers, matching the internal pipeline order. See
+Corrections are applied in three layers, matching the internal pipeline order. See
 [DEVELOPERS_GUIDE.md](DEVELOPERS_GUIDE.md) for how each layer fits into the pipeline.
 
 ---
 
-## Layer 1 — Token Corrections (Variable Name column typos)
+## Layer 1 — Per-Log Format String Corrections
 
-PAN-OS field tables sometimes contain wrong or truncated variable names in the parenthetical
-alongside a field's long name. `token_corrections` maps each incorrect value to its correct
-form. This correction is applied both to the `*_fields.csv` Variable Name column and to each
-output token in the transformed format string line.
-
-| Log Type | Field Name | PAN-OS docs value | Variable Name | Notes |
-|---|---|---|---|---|
-| User-ID_Log | FUTURE_USE | `FUTURE_USER` | `FUTURE_USE` | Typo in PAN-OS field table |
-| IP_Tag_Log, Auth, URL, Threat, User-ID | High Resolution Timestamp | `high_res` | `high_res_timestamp` | Truncated; full name confirmed from other log types where it appears correctly |
-| IP_Tag_Log | Event ID | `event_id` | `eventid` | Underscore inconsistency; PAN-OS uses `eventid` (no underscore) across all other log types |
-| Traffic_Log | Tunnel ID/IMSI | `tunnelid/imsi` | `tunnel_id/imsi` | Missing underscore before slash |
-| Tunnel_Inspection_Log | Tunnel ID | `tunnelid` | `tunnel_id/imsi` | Field table uses "Tunnel ID (tunnelid)" without /IMSI suffix; corrected to match format string mapping |
-| Tunnel_Inspection_Log | Monitor Tag | `monitortag` | `monitortag/imei` | Field table uses "Monitor Tag (monitortag)" without /IMEI suffix; corrected to match format string mapping |
-| GTP_Log | A Slice Service Type | `nsdsai_sst` | `nssai_sst` | "nsdsai" is a PAN-OS typo for "nssai" (correct 3GPP S-NSSAI abbreviation) |
-| GTP_Log | A Slice Differentiator | `nsdsai_sd` | `nssai_sd` | Same "nsdsai" → "nssai" typo |
-
----
-
-## Layer 2 — Missing Variable Names (no parenthetical in PA docs)
-
-Some log types omit the parenthetical variable name from their field table entirely. PALOS
-fills these from `field_table_overrides`, using the long field name as the lookup key. Values
-are cross-referenced from other log types (System_Log, Config_Log) that do include the
-parenthetical for the same field. These entries also feed into format string transformation
-via `_build_name_map`'s no-parenthetical branch, without affecting other log types.
-
-| Log Type | Field Name | PAN-OS docs value | Variable Name | Notes |
-|---|---|---|---|---|
-| Audit_Log | Serial Number | *(empty)* | `serial` | Cross-referenced from System_Log / Config_Log field tables |
-| Audit_Log | Generate Time | *(empty)* | `time_generated` | Cross-referenced from other log types |
-| Audit_Log | Event ID | *(empty)* | `eventid` | Cross-referenced from System_Log field table |
-| Audit_Log | Object | *(empty)* | `object` | Cross-referenced from Config_Log field table |
-| Audit_Log | CLI Command | *(empty)* | `cmd` | Cross-referenced from Config_Log field table |
-| Audit_Log | Severity | *(empty)* | `severity` | Cross-referenced from System_Log field table |
-
----
-
-## Layer 3 — Long Name Mapping Gaps (format string → variable name)
-
-The format string uses long human-readable names (e.g. "Generated Time", "Source Address").
-PALOS auto-detects the mapping from long name to variable name by reading the field table
-parentheticals. However, some long names fail to auto-match due to casing differences,
-inconsistent phrasing across log types, or missing parentheticals. These are encoded in
-`global_name_overrides`.
-
-### Time fields
-
-Two log types (IP_Tag_Log uses "Generate Time"; most others use "Generated Time") produce
-a long name that does not match any parenthetical in their own field table.
-
-| Long name in format string | Variable Name | Log Type |
-|---|---|---|
-| "Generated Time" | `time_generated` | Most log types |
-| "Generate Time" | `time_generated` | IP_Tag_Log |
-
-### Device Group Hierarchy (three naming patterns across log types)
-
-PAN-OS documentation uses three distinct naming patterns for the same concept across different
-log types. The code handles `Device Group Hierarchy Level N` via regex; the other two are
-handled by `global_name_overrides`.
-
-| Pattern in format string | Example | Variable Name |
-|---|---|---|
-| `Device Group Hierarchy Level N` | "Device Group Hierarchy Level 1" | `dg_hier_level_1` (regex in `_transform_format_string`) |
-| `DG Hierarchy Level N` | "DG Hierarchy Level 1" | `dg_hier_level_1` |
-| `Device Group Hierarchy N` | "Device Group Hierarchy 1" | `dg_hier_level_1` |
-
-### Other unmapped long names
-
-These long names appear in format strings but do not auto-map to a variable name, each
-for a specific reason documented in the Root Cause column below.
-
-| Field Name (in *_fields.csv) | Long name in format string | Variable Name | Log Type | Notes |
-|---|---|---|---|---|
-| Threat/Content Name (threatid) | "Threat ID" | `threatid` | Data_Filtering_Log, Threat_Log, URL_Filtering_Log | Format string name differs from field table name |
-| Source Country (srcloc) | "Source Location" | `srcloc` | GTP_Log, Threat_Log, Tunnel_Inspection_Log | Format string name differs from field table name |
-| Destination Country (dstloc) | "Destination Location" | `dstloc` | GTP_Log, Threat_Log, Tunnel_Inspection_Log | Format string name differs from field table name |
-| *(absent from field table)* | "Parent Start Time" | `parent_start_time` | Data_Filtering_Log, Threat_Log, Traffic_Log, Tunnel_Inspection_Log, URL_Filtering_Log | Field absent from most of these log types' field tables |
-| PCAP ID (pcap_id) | "PCAP_ID" | `pcap_id` | Data_Filtering_Log, Threat_Log, URL_Filtering_Log | Format string uses underscore; field table uses space |
-| IP Protocol (proto) | "Protocol" | `proto` | GTP_Log, Traffic_Log, Tunnel_Inspection_Log | Format string drops the "IP " prefix present in the field table name |
-| Threat/Content Type (subtype) | "Subtype" | `subtype` | Config_Log, Tunnel_Inspection_Log | Format string name differs from field table name |
-| Serial Number (serial) | "Serial" | `serial` | IP_Tag_Log | Format string name differs from field table name |
-| Certificate Fingerprint (fingerprint) | "Fingerprint" | `fingerprint` | Decryption_Log | Format string name differs from field table name |
-| IPv6 System Address (srcipv6) | "IPv6 Source Address" | `srcipv6` | HIP_Match_Log | Format string name differs from field table name |
-| High Resolution Timestamp (high_res_timestamp) | "High Res Timestamp" | `high_res_timestamp` | Decryption_Log, GlobalProtect_Log | Format string abbreviates field table name |
-| Gateway Selection Method (selection_type) | "Selection Type" | `selection_type` | GlobalProtect_Log | Format string name differs from field table name |
-| SSL Response Time (response_time) | "Response Time" | `response_time` | GlobalProtect_Log | Format string name differs from field table name |
-| Gateway Priority (priority) | "Priority" | `priority` | GlobalProtect_Log | Format string name differs from field table name |
-| Gateway Name (gateway) | "Gateway" | `gateway` | GlobalProtect_Log | Format string name differs from field table name |
-| Tunnel ID (tunnel_id/imsi) | "Tunnel ID/IMSI" | `tunnel_id/imsi` | Tunnel_Inspection_Log | Field table lacks `/IMSI` suffix so auto-detection fails; format string token remains unmapped and is caught by token_corrections. Fields CSV variable name also corrected via token_corrections (`tunnelid` → `tunnel_id/imsi`). Other log types auto-detect: Traffic/Threat/URL/Data → `tunnel_id/imsi`, GTP → `imsi`. |
-| Monitor Tag (monitortag/imei) | "Monitor Tag/IMEI" | `monitortag/imei` | Tunnel_Inspection_Log | Field table lacks `/IMEI` suffix so auto-detection fails; format string token remains unmapped and is caught by token_corrections. Fields CSV variable name also corrected via token_corrections (`monitortag` → `monitortag/imei`). Other log types auto-detect: Traffic/Threat/URL/Data → `monitortag/imei`, GTP → `imei`. |
-| Tunnel Type (tunnel) | "Tunnel" | `tunnel` | Decryption_Log, Tunnel_Inspection_Log | Format string name differs from field table name |
-| Strict Checking (strict_check) | "Strict Check" | `strict_check` | Tunnel_Inspection_Log | Format string name differs from field table name |
-| Security Rule UUID (rule_uuid) | "Rule UUID" | `rule_uuid` | Data_Filtering_Log, Threat_Log, Traffic_Log, Tunnel_Inspection_Log, URL_Filtering_Log | Format string name differs from field table name |
-| Dynamic User Group Name (dynusergroup_name) | "Dynamic User Group" | `dynusergroup_name` | Tunnel_Inspection_Log | Format string name differs from field table name |
-| Threat/ContentType (subtype) | "Threat/Content Type" | `subtype` | Decryption_Log | Typo in PAN-OS field table: missing space ("ContentType" instead of "Content Type") — auto-detected key `"Threat/ContentType"` does not match format string token `"Threat/Content Type"` |
-| Issuer Common Name (issuer_cn) | "Issuer Subject Common Name" | `issuer_cn` | Decryption_Log | Format string name differs from field table name |
-| Root Common Name (root_cn) | "Root Subject Common Name" | `root_cn` | Decryption_Log | Format string name differs from field table name |
-| Server Name Indication(sni) | "Server Name Indication" | `sni` | Decryption_Log | Malformed parenthetical (no space before `(`) — regex fails to extract variable name |
-| End IP Address (end_ip_adr) | "End User IP Address" | `end_ip_adr` | GTP_Log | Format string name differs from field table name |
-| Serving Network MCC (mcc) | "Serving Country MCC" | `mcc` | GTP_Log | Format string name differs from field table name |
-| Tunnel Inspection Rule(tunnel_insp_rule) | "Tunnel Inspection Rule" | `tunnel_insp_rule` | GTP_Log, Tunnel_Inspection_Log | Malformed parenthetical (no space before `(`) — regex fails to extract variable name |
-
----
-
-## Layer 4 — Per-Log Structural Corrections
-
-Some corrections are position-based and specific to one log type — either a PAN-OS docs structural
-bug that breaks parsing, or a case where auto-detection produces the wrong result at a specific
-field position that cannot be fixed by a simple token or name override.
-
-### GlobalProtect_Log — Serial field collision
-
-PAN-OS's GlobalProtect field table contains two serial-related rows:
-
-| Field Name | PAN-OS docs value | Variable Name |
-|---|---|---|
-| Serial # (serial) | `serial` | `serial` ✅ |
-| Serial Number (serialnumber) | `serialnumber` | `serialnumber` ✅ |
-
-The format string has `"Serial Number"` at two positions: the firewall's own serial number
-(should be `serial`) and the machine's serial number (should be `serialnumber`). Both
-auto-map to `serialnumber` via the `Serial Number (serialnumber)` field table row. The
-`Serial # (serial)` row is not matched because the format string token is `"Serial Number"`,
-not `"Serial #"`.
-
-Correction: `match: "serialnumber"` with `new: "serial"` replaces the first occurrence of
-`serialnumber` in the transformed list (the firewall serial position) while leaving the
-second occurrence (`Serial Number — machine serial`) untouched. `match` (value-based, first
-occurrence) is used rather than `position` so the fix is independent of
-`strip_leading_future_use` and upstream field additions.
+Applied at extraction time inside `extract_format_string()`. These correct raw format string
+tokens before any variable name lookup — fixing PAN-OS docs structural bugs that produce
+malformed or incorrect tokens in the comma-split list. Configured under `per_log_corrections`.
 
 ### Correlated_Events_Log — Period instead of comma (PAN-OS docs literal bug)
 
@@ -158,10 +30,198 @@ in the Correlated Events format string, producing the single token:
 This is a literal bug in the PAN-OS documentation page — not a PALOS parsing issue.
 Correction: `match: "Source Address. Source User"` with `split_into: ["src", "srcuser"]`
 expands the single malformed token back into two correct tokens. `match` (value-based)
-is used rather than `position` (index-based) so the fix is independent of
-`strip_leading_future_use` and upstream field additions.
+is used rather than `position` (index-based) so the fix is independent of upstream field
+additions.
 
-### Threat_Log — Swapped trailing fields (PAN-OS docs error, not yet corrected)
+### GlobalProtect_Log — Serial field collision
+
+PAN-OS's GlobalProtect field table contains two serial-related rows:
+
+| Field Name | Field Name lookup | Variable Name |
+|---|---|---|
+| `Serial # (serial)` | `Serial #` | `serial` |
+| `Serial Number (serialnumber)` | `Serial Number` | `serialnumber` |
+
+The format string has `"Serial Number"` at two positions:
+- Position 2 (firewall serial) → should map to `serial` via `Serial # (serial)`
+- Position 20 (machine serial) → should map to `serialnumber` via `Serial Number (serialnumber)`
+
+Without correction both positions would look up `"Serial Number"` and find `Serial Number
+(serialnumber)` → `serialnumber`.
+
+Correction: `per_log_corrections.GlobalProtect_Log` uses `match: "Serial Number"` (first
+occurrence only) with `new: "Serial #"`. This renames position 2's token to `"Serial #"` at
+extraction time, so lookup finds the correct `Serial # (serial)` row → `serial`. Position 20
+keeps `"Serial Number"` and looks up `Serial Number (serialnumber)` → `serialnumber`. Both
+field table rows retain their correct variable names untouched.
+
+---
+
+## Layer 2 — Field Name Lookup Corrections
+
+Applied to the `Field Name lookup` column of the field table before variable name lookup.
+These normalize field table lookup keys to match the corresponding format string token
+exactly, bridging cases where the field table name and format string name differ.
+Configured under `field_name_lookup_corrections.global` and `per_log_type`.
+
+### Auto-detected fields (no config entry needed)
+
+The `_extract_variable_name()` and `_extract_field_name_lookup()` helpers use a relaxed
+`\s*\(` regex (no required space before the opening parenthesis). This automatically handles
+malformed parentheticals:
+
+| Field Name in PA docs | Auto-detected variable name | Notes |
+|---|---|---|
+| `Server Name Indication(sni)` | `sni` | No space before `(` — relaxed regex fixes |
+| `Tunnel Inspection Rule(tunnel_insp_rule)` | `tunnel_insp_rule` | Same fix |
+
+### Device Group Hierarchy (three naming patterns across log types)
+
+All three DG Hierarchy naming patterns are handled by a single regex in
+`_lookup_variable_names` — no config entries needed:
+
+```
+re.match(r"(?:Device Group Hierarchy(?:\s+Level)?|DG Hierarchy Level)\s+(\d+)", token)
+```
+
+| Pattern in format string | Example | Variable Name |
+|---|---|---|
+| `Device Group Hierarchy Level N` | "Device Group Hierarchy Level 1" | `dg_hier_level_1` |
+| `DG Hierarchy Level N` | "DG Hierarchy Level 1" | `dg_hier_level_1` |
+| `Device Group Hierarchy N` | "Device Group Hierarchy 1" | `dg_hier_level_1` |
+
+### Global field name lookup corrections
+
+These correct field table lookup keys that only need renaming for specific log types where the
+table key is NEVER the format string token for any log type. Entries where the table key IS the
+correct format token for some other log type cannot be global — they are handled instead via
+`variable_name_corrections.global` (the format token passes through lookup unchanged and is
+caught downstream).
+
+| Field Name lookup (in table) | Format string token | Variable Name | Log Type | Notes |
+|---|---|---|---|---|
+| Threat/Content Name | "Threat ID" | `threatid` | Data_Filtering_Log, Threat_Log, URL_Filtering_Log | Table name differs from format token |
+| Certificate Fingerprint | "Fingerprint" | `fingerprint` | Decryption_Log | Table name differs from format token |
+| Gateway Priority | "Priority" | `priority` | GlobalProtect_Log | Table name differs from format token |
+| Gateway Name | "Gateway" | `gateway` | GlobalProtect_Log | Table name differs from format token |
+| Gateway Selection Method | "Selection Type" | `selection_type` | GlobalProtect_Log | Table name differs from format token |
+| SSL Response Time | "Response Time" | `response_time` | GlobalProtect_Log | Table name differs from format token |
+| IPv6 System Address | "IPv6 Source Address" | `srcipv6` | HIP_Match_Log | Table name differs from format token |
+| Threat/ContentType | "Threat/Content Type" | `subtype` | Decryption_Log | Typo in PA docs: missing space in table key |
+| Issuer Common Name | "Issuer Subject Common Name" | `issuer_cn` | Decryption_Log | Table name differs from format token |
+| Root Common Name | "Root Subject Common Name" | `root_cn` | Decryption_Log | Table name differs from format token |
+| End IP Address | "End User IP Address" | `end_ip_adr` | GTP_Log | Table name differs from format token |
+| Serving Network MCC | "Serving Country MCC" | `mcc` | GTP_Log | Table name differs from format token |
+| Strict Checking | "Strict Check" | `strict_check` | Tunnel_Inspection_Log | Table name differs from format token |
+| Security Rule UUID | "Rule UUID" | `rule_uuid` | Data_Filtering_Log, Threat_Log, Traffic_Log, Tunnel_Inspection_Log, URL_Filtering_Log | Table name differs from format token |
+
+The following were previously listed as global corrections but are handled via
+`variable_name_corrections.global` instead (see Layer 3), because the table key IS the
+correct format token in some log types:
+
+| Table key | Format token (affected logs) | Format token (other logs) | Handled by |
+|---|---|---|---|
+| Source Country | "Source Location" | "Source Country" (Traffic) | `variable_name_corrections["Source Location"]` |
+| Destination Country | "Destination Location" | "Destination Country" (Traffic) | `variable_name_corrections["Destination Location"]` |
+| IP Protocol | "Protocol" | "IP Protocol" (Decryption) | `variable_name_corrections["Protocol"]` |
+| High Resolution Timestamp | "High Res Timestamp" | "High Resolution Timestamp" (most logs) | `variable_name_corrections["High Res Timestamp"]` |
+| Threat/Content Type | "Subtype" | "Threat/Content Type" (Traffic, etc.) | `variable_name_corrections["Subtype"]` |
+| Tunnel Type | "Tunnel" | "Tunnel Type" (Traffic, GlobalProtect) | `variable_name_corrections["Tunnel"]` |
+| Dynamic User Group Name | "Dynamic User Group" | "Dynamic User Group Name" (Traffic, etc.) | `variable_name_corrections["Dynamic User Group"]` |
+| PCAP ID | "PCAP_ID" | "PCAP ID" (GTP, Tunnel_Inspection) | `variable_name_corrections["PCAP_ID"]` |
+
+### Per-log-type field name lookup corrections
+
+| Log Type | Field Name lookup (in table) | Format string token | Notes |
+|---|---|---|---|
+| IP_Tag_Log | "Serial Number" | "Serial" | Format string uses abbreviated token |
+| Threat_Log | "Source address" | "Source Address" | Field table lowercase 'a'; format uppercase 'A' |
+| Threat_Log | "Destination address" | "Destination Address" | Same case mismatch |
+| URL_Filtering_Log | "Source address" | "Source Address" | Same case mismatch as Threat |
+| URL_Filtering_Log | "Destination address" | "Destination Address" | Same case mismatch |
+| Data_Filtering_Log | "Source address" | "Source Address" | Same case mismatch as Threat |
+| Data_Filtering_Log | "Destination address" | "Destination Address" | Same case mismatch |
+
+---
+
+## Layer 3 — Variable Name Corrections
+
+Applied after `_lookup_variable_names`. Corrects variable names in both the format token
+list and the `Variable Name` column of the field table. Global corrections use replace-all
+semantics; per-log-type corrections use first-occurrence semantics on the token list.
+Configured under `variable_name_corrections.global` and `per_log_type`.
+
+### Lookup failures (raw long names that pass through unchanged)
+
+When a format token has no matching row in the field table (or has a matching row with an
+empty Variable Name that gets written back), the raw long name passes through to this stage:
+
+| Token passed through | Variable Name | Log Type | Notes |
+|---|---|---|---|
+| "Generated Time" | `time_generated` | Most log types | Format "Generated Time"; table "Generate Time" — lookup fails |
+| "Generate Time" | `time_generated` | IP_Tag_Log, Audit_Log | IP_Tag: format "Generate Time", table "Generated Time" (mismatch); Audit_Log: "Generate Time" row has no parenthetical → placeholder pass-through |
+| "Parent Start Time" | `parent_start_time` | Data_Filtering_Log, Threat_Log, Traffic_Log, Tunnel_Inspection_Log, URL_Filtering_Log | Field absent from most of these log types' field tables |
+| "Source Location" | `srcloc` | GTP_Log, Threat_Log, Tunnel_Inspection_Log | Table "Source Country" ≠ format "Source Location" |
+| "Destination Location" | `dstloc` | GTP_Log, Threat_Log, Tunnel_Inspection_Log | Table "Destination Country" ≠ format "Destination Location" |
+| "Protocol" | `proto` | GTP_Log, Traffic_Log, Tunnel_Inspection_Log | Table "IP Protocol" ≠ format "Protocol" |
+| "High Res Timestamp" | `high_res_timestamp` | Decryption_Log, GlobalProtect_Log | Table "High Resolution Timestamp" ≠ format "High Res Timestamp" |
+| "Subtype" | `subtype` | Config_Log, Tunnel_Inspection_Log, URL_Filtering_Log | Table "Threat/Content Type" ≠ format "Subtype" |
+| "Tunnel" | `tunnel` | Decryption_Log, Tunnel_Inspection_Log | Table "Tunnel Type" ≠ format "Tunnel" |
+| "Dynamic User Group" | `dynusergroup_name` | Tunnel_Inspection_Log | Table "Dynamic User Group Name" ≠ format "Dynamic User Group" |
+| "PCAP_ID" | `pcap_id` | Data_Filtering_Log, Threat_Log, URL_Filtering_Log | Table "PCAP ID" ≠ format "PCAP_ID" |
+| "Source Mac Address" | `src_mac` | Traffic_Log, Threat_Log, URL_Filtering_Log, Data_Filtering_Log, Authentication_Log, Decryption_Log | Table "Source MAC Address" (all-caps MAC) ≠ format "Source Mac Address" |
+| "Destination Mac Address" | `dst_mac` | Traffic_Log, Threat_Log, URL_Filtering_Log, Data_Filtering_Log, Decryption_Log | Table "Destination MAC Address" ≠ format "Destination Mac Address" |
+
+**Note on Generate Time / Generated Time:** The format token differs between log types.
+For most logs: format "Generated Time", table "Generate Time" → lookup fails → passes through
+→ `variable_name_corrections["Generated Time"]`. For IP_Tag_Log: format "Generate Time",
+table "Generated Time" → lookup fails → passes through → `variable_name_corrections["Generate Time"]`.
+For Audit_Log: format "Generate Time", table "Generate Time" (no parenthetical) → found + empty
+Variable Name → placeholder pass-through → same correction catches it.
+
+### Field table Variable Name typos
+
+PAN-OS field tables sometimes contain wrong or truncated variable names in the parenthetical.
+These are corrected via `variable_name_corrections.global` after lookup:
+
+| Log Type | Field Name | PAN-OS docs value | Correct variable name | Notes |
+|---|---|---|---|---|
+| User_ID_Log | FUTURE_USE | `FUTURE_USER` | `FUTURE_USE` | Typo in PAN-OS field table |
+| IP_Tag_Log, Auth, URL, Threat, User-ID | High Resolution Timestamp | `high_res` | `high_res_timestamp` | Truncated in PA field table |
+| IP_Tag_Log | Event ID | `event_id` | `eventid` | Underscore inconsistency |
+| Traffic_Log | Tunnel ID/IMSI | `tunnelid/imsi` | `tunnel_id/imsi` | Missing underscore before slash |
+| Tunnel_Inspection_Log | Tunnel ID | `tunnelid` | `tunnel_id/imsi` | Field table uses "Tunnel ID (tunnelid)" without /IMSI suffix |
+| Tunnel_Inspection_Log | Monitor Tag | `monitortag` | `monitortag/imei` | Field table uses "Monitor Tag (monitortag)" without /IMEI suffix |
+| GTP_Log | A Slice Service Type | `nsdsai_sst` | `nssai_sst` | "nsdsai" → "nssai" typo in PA docs |
+| GTP_Log | A Slice Differentiator | `nsdsai_sd` | `nssai_sd` | Same typo |
+
+For Tunnel_Inspection_Log, the format tokens "Tunnel ID/IMSI" and "Monitor Tag/IMEI" also
+fail lookup (field table has "Tunnel ID" and "Monitor Tag" respectively as lookup keys),
+so they pass through as raw long names and are caught by the same `variable_name_corrections`
+entries (`"Tunnel ID/IMSI"` → `tunnel_id/imsi`, `"Monitor Tag/IMEI"` → `monitortag/imei`).
+
+### Fields with no parenthetical in PA docs (pass-through + variable_name_corrections)
+
+Some log types omit the parenthetical variable name from their field table. When
+`_lookup_variable_names` finds a matching row with an empty Variable Name, it writes the
+raw format token back to the Variable Name column as a placeholder and passes the token
+through unchanged. The raw long name then reaches `variable_name_corrections.global`.
+
+| Log Type | Field | Pass-through token | Corrected variable name |
+|---|---|---|---|
+| Audit_Log | Serial Number | "Serial Number" | `serial` |
+| Audit_Log | Generate Time | "Generate Time" | `time_generated` (same correction as IP_Tag_Log pass-through) |
+| Audit_Log | Event ID | "Event ID" | `eventid` |
+| Audit_Log | Object | "Object" | `object` |
+| Audit_Log | CLI Command | "CLI Command" | `cmd` |
+| Audit_Log | Severity | "Severity" | `severity` |
+
+The "Threat/Content Type" field in Audit_Log DOES have a parenthetical `(subtype)` and maps
+correctly without any correction.
+
+---
+
+## Threat_Log — Swapped trailing fields (PAN-OS docs error, not yet corrected)
 
 PAN-OS documentation lists the final two fields of the Threat Log format string in the
 wrong order compared to URL Filtering and Data Filtering, which have identical schemas:
