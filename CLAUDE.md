@@ -64,6 +64,9 @@ The log type name in config (e.g. `Audit_Log`) has `_Log` stripped when generati
 ### Gotchas
 - `force_rescrape` is currently `true` in config — every run re-fetches all pages. Set to `false` to skip existing output.
 - `field_name_lookup_corrections.global`: only add an entry when the table key is NEVER the
-  correct format token for any log type. If any log uses it as a format token, use
-  `variable_name_corrections.global` to catch the pass-through instead (see EDGE_CASES.md).
+  correct format token for any log type. If any log uses the table key as its format token,
+  use `field_name_lookup_corrections.per_log_type` for the specific logs that need a different
+  token. Per_log_type corrections are merged over global (same-key entries in per_log_type
+  override global), so an identity mapping (e.g. `"X": "X"`) can suppress a global rename for
+  a specific log type (see Audit_Log "Generate Time" in EDGE_CASES.md).
 - `per_log_corrections` with `match:` replaces the FIRST occurrence only (uses `list.index()`).
