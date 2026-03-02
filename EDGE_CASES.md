@@ -184,21 +184,6 @@ empty Variable Name that gets written back), the raw long name passes through to
 | "Source Mac Address" | `src_mac` | Traffic_Log, Authentication_Log, Decryption_Log | These format strings use mixed-case "Source Mac Address"; table key is all-caps "Source MAC Address" → lookup fails |
 | "Destination Mac Address" | `dst_mac` | Traffic_Log, Decryption_Log | Same mixed-case mismatch as Source Mac Address |
 
-The following were previously lookup failures but are now resolved by `field_name_lookup_corrections.per_log_type` —
-lookup now succeeds and returns the correct variable name from the field table parenthetical directly:
-
-| Token (was passed through) | Variable Name | Resolved by |
-|---|---|---|
-| "Generated Time" | `time_generated` | global: "Generate Time" → "Generated Time" renames table key; lookup succeeds |
-| "Source Location" | `srcloc` | per_log_type (Threat/GTP/Tunnel_Inspection): "Source Country" → "Source Location" |
-| "Destination Location" | `dstloc` | per_log_type (Threat/GTP/Tunnel_Inspection): "Destination Country" → "Destination Location" |
-| "Protocol" | `proto` | per_log_type (Traffic/GTP/Tunnel_Inspection): "IP Protocol" → "Protocol" |
-| "Subtype" | `subtype` | per_log_type (Config/Tunnel_Inspection): "Threat/Content Type" → "Subtype" |
-| "Tunnel" | `tunnel` | per_log_type (Decryption/Tunnel_Inspection): "Tunnel Type" → "Tunnel" |
-| "Dynamic User Group" | `dynusergroup_name` | per_log_type (Tunnel_Inspection): "Dynamic User Group Name" → "Dynamic User Group" |
-| "PCAP_ID" | `pcap_id` | per_log_type (Threat/URL/Data): "PCAP ID" → "PCAP_ID" |
-| "High Res Timestamp" | `high_res_timestamp` | per_log_type (Decryption): "High Resolution Timestamp" → "High Res Timestamp"; GlobalProtect still fails (no table row) |
-
 **Note on Generate Time / Generated Time:** `field_name_lookup_corrections.global` renames the
 table key "Generate Time" → "Generated Time". For most logs (where the format token IS "Generated
 Time"), lookup now succeeds and returns `time_generated` from the parenthetical — no
