@@ -6,6 +6,23 @@
 #   - The scraper's name-mapping logic misses some long-name → variable-name lookups
 #   - One PA doc page has a literal bug (period instead of comma as separator)
 
+# per_log_corrections: raw format string token corrections applied at extraction time.
+# These operate on the raw comma-split tokens BEFORE any variable name lookup.
+# Two selector types: match (value-based, preferred) or position (0-indexed, fragile).
+# Two correction types: new (replace token) or split_into (expand token into multiple).
+per_log_corrections:
+  Correlated_Events_Log:
+    # PA docs bug: period instead of comma produces single token "Source Address. Source User"
+    - match: "Source Address. Source User"
+      split_into: ["src", "srcuser"]
+  GlobalProtect_Log:
+    # Format has "Serial Number" at two positions:
+    #   position 2  (firewall serial) → should map to Serial # (serial)   → serial
+    #   position 20 (machine serial)  → should map to Serial Number (serialnumber) → serialnumber
+    # Rename the first occurrence at extraction time so lookup finds the correct field table row.
+    - match: "Serial Number"
+      new: "Serial #"
+
 # field_name_lookup_corrections: normalizes "Field Name lookup" column values to match
 # format string tokens. Applied before _lookup_variable_names.
 # Keys are values as they appear in the field table's "Field Name lookup" column.
@@ -124,20 +141,3 @@ variable_name_corrections:
     "nsdsai_sst": "nssai_sst" # GTP: "nsdsai" → "nssai" typo in PA docs
     "nsdsai_sd": "nssai_sd" # GTP: same typo
   per_log_type: {}
-
-# per_log_corrections: raw format string token corrections applied at extraction time.
-# These operate on the raw comma-split tokens BEFORE any variable name lookup.
-# Two selector types: match (value-based, preferred) or position (0-indexed, fragile).
-# Two correction types: new (replace token) or split_into (expand token into multiple).
-per_log_corrections:
-  Correlated_Events_Log:
-    # PA docs bug: period instead of comma produces single token "Source Address. Source User"
-    - match: "Source Address. Source User"
-      split_into: ["src", "srcuser"]
-  GlobalProtect_Log:
-    # Format has "Serial Number" at two positions:
-    #   position 2  (firewall serial) → should map to Serial # (serial)   → serial
-    #   position 20 (machine serial)  → should map to Serial Number (serialnumber) → serialnumber
-    # Rename the first occurrence at extraction time so lookup finds the correct field table row.
-    - match: "Serial Number"
-      new: "Serial #"
