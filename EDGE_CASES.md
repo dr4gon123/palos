@@ -135,6 +135,8 @@ for the specific logs that use the different format token:
 | Log Type | Field Name lookup (in table) | Format string token | Notes |
 |---|---|---|---|
 | IP_Tag_Log | "Serial Number" | "Serial" | Format string uses abbreviated token |
+| IP_Tag_Log | "Generated Time" | "Generate Time" | IP_Tag table has "Generated Time", format uses "Generate Time" — per_log_type rename makes lookup succeed; parenthetical gives `time_generated` directly |
+| Audit_Log | "Generate Time" | "Generate Time" | Identity mapping suppresses global's "Generate Time"→"Generated Time" rename; table key stays "Generate Time" so format token finds the (empty) row → placeholder pass-through → `variable_name_corrections` catches it |
 | Threat_Log | "Source address" | "Source Address" | Field table lowercase 'a'; format uppercase 'A' |
 | Threat_Log | "Destination address" | "Destination Address" | Same case mismatch |
 | Threat_Log | "Source Country" | "Source Location" | Format "Source Location", table "Source Country" |
@@ -176,7 +178,7 @@ empty Variable Name that gets written back), the raw long name passes through to
 
 | Token passed through | Variable Name | Log Type | Notes |
 |---|---|---|---|
-| "Generate Time" | `time_generated` | IP_Tag_Log, Audit_Log | IP_Tag: format "Generate Time", table "Generated Time" — correction doesn't apply, lookup fails; Audit_Log: table "Generate Time" was renamed to "Generated Time" by the global correction, so format "Generate Time" now fails lookup |
+| "Generate Time" | `time_generated` | Audit_Log | Per_log_type identity `"Generate Time"→"Generate Time"` suppresses global rename; table key stays "Generate Time"; format token finds the row (empty Variable Name → placeholder pass-through → caught here). IP_Tag_Log now resolves via lookup (see Layer 2 per_log_type table). |
 | "Parent Start Time" | `parent_start_time` | some log types | Safety fallback: field absent from some log type field tables even after global "Parent Session Start Time" correction |
 | "High Res Timestamp" | `high_res_timestamp` | GlobalProtect_Log | GlobalProtect field table has no "High Resolution Timestamp" row at all — per_log_type correction cannot apply |
 | "Source Mac Address" | `src_mac` | Traffic_Log, Authentication_Log, Decryption_Log | These format strings use mixed-case "Source Mac Address"; table key is all-caps "Source MAC Address" → lookup fails |
@@ -200,14 +202,15 @@ lookup now succeeds and returns the correct variable name from the field table p
 **Note on Generate Time / Generated Time:** `field_name_lookup_corrections.global` renames the
 table key "Generate Time" → "Generated Time". For most logs (where the format token IS "Generated
 Time"), lookup now succeeds and returns `time_generated` from the parenthetical — no
-`variable_name_corrections` entry needed for "Generated Time". Two exceptions remain:
-- **IP_Tag_Log**: format "Generate Time", table "Generated Time" (with 'd') — the global correction
-  key is "Generate Time" which doesn't match IP_Tag's table key "Generated Time", so the correction
-  doesn't apply and IP_Tag's table stays as "Generated Time". Lookup of format token "Generate Time"
-  fails → passes through → caught by `variable_name_corrections["Generate Time"]`.
-- **Audit_Log**: format "Generate Time", table "Generate Time" (no parenthetical) — the global
-  correction renames the table key to "Generated Time". Lookup of format token "Generate Time" now
-  fails (table has "Generated Time") → passes through → caught by `variable_name_corrections["Generate Time"]`.
+`variable_name_corrections` entry needed for "Generated Time". Two exceptions handled per_log_type:
+- **IP_Tag_Log**: format "Generate Time", table "Generated Time" (with 'd') — per_log_type renames
+  IP_Tag's table key "Generated Time" → "Generate Time", so lookup of format token "Generate Time"
+  succeeds and returns `time_generated` from the parenthetical directly. No variable_name_corrections
+  entry needed for IP_Tag.
+- **Audit_Log**: format "Generate Time", table "Generate Time" (no parenthetical) — per_log_type
+  identity `"Generate Time"→"Generate Time"` overrides the global entry for this log type, suppressing
+  the rename. Table key stays "Generate Time"; lookup of format token "Generate Time" finds the row
+  (empty Variable Name → placeholder pass-through) → caught by `variable_name_corrections["Generate Time"]`.
 
 **Note on Source/Destination MAC Address:** The format string uses different capitalization across
 log types. Threat/URL/Data and most others use all-caps "Source MAC Address" — this matches the
@@ -247,7 +250,7 @@ through unchanged. The raw long name then reaches `variable_name_corrections.glo
 | Log Type | Field | Pass-through token | Corrected variable name |
 |---|---|---|---|
 | Audit_Log | Serial Number | "Serial Number" | `serial` |
-| Audit_Log | Generate Time | "Generate Time" | `time_generated` — passes through because `field_name_lookup_corrections.global` renamed the table key to "Generated Time", so lookup of "Generate Time" fails (see note above) |
+| Audit_Log | Generate Time | "Generate Time" | `time_generated` — per_log_type identity mapping keeps table key as "Generate Time"; lookup finds the row (empty Variable Name → placeholder pass-through); caught by `variable_name_corrections["Generate Time"]` |
 | Audit_Log | Event ID | "Event ID" | `eventid` |
 | Audit_Log | Object | "Object" | `object` |
 | Audit_Log | CLI Command | "CLI Command" | `cmd` |

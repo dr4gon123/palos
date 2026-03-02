@@ -3,7 +3,7 @@ Receive Time (receive_time or cef-formatted-receive_time),Receive Time,receive_t
 Serial Number (serial),Serial,serial,The serial number of the firewall that generated the log.
 Type (type),Type,type,Specifies the type of log; value is IPTAG.
 Threat/Content Type (subtype),Threat/Content Type,subtype,The subtype of the HIP match log; unused.
-Generated Time (time_generated or cef-formatted-time_generated),Generated Time,time_generated,The time the log was generated on the dataplane.
+Generated Time (time_generated or cef-formatted-time_generated),Generate Time,time_generated,The time the log was generated on the dataplane.
 Virtual System (vsys),Virtual System,vsys,The virtual system associated with the HIP match log.
 Source IP (src),Source IP,src,The IP address of the source user.
 Tag Name (tag_name),Tag Name,tag_name,The tag mapped to the source IP address.

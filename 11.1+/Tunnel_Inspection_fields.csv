@@ -85,8 +85,8 @@ API query: FM Dita Overlay for Code
 /api/?type=op&cmd=<show><dg-hierarchy></dg-hierarchy></show>"
 Virtual System Name (vsys_name),Virtual System Name,vsys_name,The name of the virtual system associated with the session; only valid on firewalls enabled for multiple virtual systems.
 Device Name (device_name),Device Name,device_name,The hostname of the firewall on which the session was logged.
-Tunnel ID (tunnelid),Tunnel ID,tunnel_id/imsi,ID of the tunnel being inspected or the International Mobile Subscriber Identity (IMSI) ID of the mobile user.
-Monitor Tag (monitortag),Monitor Tag,monitortag/imei,Monitor name you configured for the Tunnel Inspection policy rule or the International Mobile Equipment Identity (IMEI) ID of the mobile device.
+Tunnel ID (tunnelid),Tunnel ID,tunnelid,ID of the tunnel being inspected or the International Mobile Subscriber Identity (IMSI) ID of the mobile user.
+Monitor Tag (monitortag),Monitor Tag,monitortag,Monitor name you configured for the Tunnel Inspection policy rule or the International Mobile Equipment Identity (IMEI) ID of the mobile device.
 Parent Session ID (parent_session_id),Parent Session ID,parent_session_id,ID of the session in which this session is tunneled. Applies to inner tunnel (if two levels of tunneling) or inside content (if one level of tunneling) only.
 Parent Start Time (parent_start_time),Parent Start Time,parent_start_time,Year/month/day hours:minutes:seconds that the parent tunnel session began.
 Tunnel Type (tunnel),Tunnel,tunnel,"Type of tunnel, such as GRE or IPSec."

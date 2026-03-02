@@ -1,6 +1,6 @@
 Field Name,Field Name lookup,Variable Name,Description
 Serial Number,Serial Number,serial,Serial number of the firewall or Panorama that generated the log.
-Generate Time,Generated Time,,Time the log was generated on the dataplane.
+Generate Time,Generate Time,time_generated,Time the log was generated on the dataplane.
 Threat/Content Type (subtype),Threat/Content Type,subtype,"Specifies the type of log; value is AUDIT.
 
 Audit logs are a subytpe of System logs."

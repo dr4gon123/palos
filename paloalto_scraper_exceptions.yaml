@@ -48,6 +48,9 @@ field_name_lookup_corrections:
   per_log_type:
     IP_Tag_Log:
       "Serial Number": "Serial" # IP_Tag: format uses abbreviated token "Serial", table has "Serial Number"
+      "Generated Time": "Generate Time" # IP_Tag: format "Generate Time", table "Generated Time" — per_log_type rename makes lookup succeed; parenthetical gives time_generated directly
+    Audit_Log:
+      "Generate Time": "Generate Time" # Audit: identity mapping prevents global from renaming "Generate Time"→"Generated Time"; table key stays "Generate Time" so format "Generate Time" finds the (empty) row → placeholder pass-through → variable_name_corrections["Generate Time"] catches it
     Threat_Log:
       "Source address": "Source Address" # Threat: field table lowercase 'a', format uppercase 'A'
       "Destination address": "Destination Address" # Threat: same case mismatch
@@ -93,9 +96,11 @@ variable_name_corrections:
     # Lookup failures: raw long names that pass through _lookup_variable_names unchanged.
     # "Generated Time" → now resolved by field_name_lookup_corrections.global ("Generate Time" → "Generated Time"),
     # so lookup succeeds and returns time_generated from the parenthetical — no longer needed here.
-    # "Generate Time" still passes through for IP_Tag_Log (table "Generated Time" ≠ format "Generate Time")
-    # and Audit_Log (table "Generate Time" renamed to "Generated Time" by correction → format "Generate Time" fails).
-    "Generate Time": "time_generated" # IP_Tag_Log/Audit_Log: "Generate Time" format token still fails lookup
+    # "Generate Time" still passes through for Audit_Log: per_log_type identity mapping prevents global from renaming
+    # the table key, so format "Generate Time" finds the row (empty Variable Name → placeholder pass-through → caught here).
+    # IP_Tag_Log: per_log_type renames table "Generated Time"→"Generate Time" so lookup succeeds and returns
+    # time_generated from the parenthetical directly — no longer needed here for IP_Tag.
+    "Generate Time": "time_generated" # Audit_Log: "Generate Time" format token → placeholder pass-through → caught here
     # "Parent Start Time" may still pass through if "Parent Session Start Time" is absent from the field table
     "Parent Start Time": "parent_start_time" # safety fallback for logs where field is absent from field table
 
@@ -130,8 +135,8 @@ variable_name_corrections:
     "tunnelid/imsi": "tunnel_id/imsi" # Traffic: PA field table lists without underscore before slash
     "Tunnel ID/IMSI": "tunnel_id/imsi" # Tunnel_Inspection_Log: format "Tunnel ID/IMSI", table "Tunnel ID" → lookup fails
     "Monitor Tag/IMEI": "monitortag/imei" # Tunnel_Inspection_Log: format "Monitor Tag/IMEI", table "Monitor Tag" → lookup fails
-    "tunnelid": "tunnel_id/imsi" # Tunnel_Inspection_Log: parenthetical produces "tunnelid" without /imsi suffix
-    "monitortag": "monitortag/imei" # Tunnel_Inspection_Log: parenthetical produces "monitortag" without /imei suffix
+    #"tunnelid": "tunnel_id/imsi" # Tunnel_Inspection_Log: parenthetical produces "tunnelid" without /imsi suffix
+    #"monitortag": "monitortag/imei" # Tunnel_Inspection_Log: parenthetical produces "monitortag" without /imei suffix
     "nsdsai_sst": "nssai_sst" # GTP: "nsdsai" → "nssai" typo in PA docs
     "nsdsai_sd": "nssai_sd" # GTP: same typo
   per_log_type: {}
