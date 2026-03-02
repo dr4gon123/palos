@@ -270,13 +270,13 @@ class PaloAltoLogScraper:
     def _extract_variable_name(self, field_name: str) -> str:
         """
         Extract variable name from Field Name.
-        Format: "Field Long Name(variable_name ...)" or "Field Long Name (variable_name ...)" -> "variable_name"
+        Format: "Field Long Name(variable_name ...)" or "Field Long Name (variable_name ...)" -> full parenthetical content
         Relaxed \\s*\\( handles malformed parentheticals like "Server Name Indication(sni)".
+        Multi-word results (e.g. "receive_time or cef-formatted-receive_time") are resolved via variable_name_corrections.
         """
         match = re.match(r"^.+?\s*\(([^)]+)\)", str(field_name))
         if match:
-            # Take first word in parentheses (handles "x or y" cases)
-            return match.group(1).split()[0].strip()
+            return match.group(1).strip()
         return ""
 
     def _extract_field_name_lookup(self, field_name: str) -> str:

@@ -129,9 +129,11 @@ variable_name_corrections:
     "CLI Command": "cmd" # Audit_Log: no parenthetical
     "Severity": "severity" # Audit_Log: no parenthetical
 
-    # Field table typos: incorrect variable names produced by parenthetical extraction
+    # Field table typos / multi-word parentheticals: incorrect variable names produced by parenthetical extraction
     "FUTURE_USER": "FUTURE_USE" # User-ID log: typo in PA docs field table
-    "high_res": "high_res_timestamp" # IP-Tag, User-ID, Auth, URL, Threat, etc.: truncated in PA field table
+    "high_res timestamp": "high_res_timestamp" # IP-Tag, User-ID, Auth, URL, Threat, etc.: space in PA field table parenthetical
+    "receive_time or cef-formatted-receive_time": "receive_time" # multi-word parenthetical
+    "time_generated or cef-formatted-time_generated": "time_generated" # multi-word parenthetical
     "event_id": "eventid" # IP-Tag: underscore wrong in PA field table
     "tunnelid/imsi": "tunnel_id/imsi" # Traffic: PA field table lists without underscore before slash
     "Tunnel ID/IMSI": "tunnel_id/imsi" # Tunnel_Inspection_Log: format "Tunnel ID/IMSI", table "Tunnel ID" → lookup fails

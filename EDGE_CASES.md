@@ -212,7 +212,7 @@ These are corrected via `variable_name_corrections.global` after lookup:
 | Log Type | Field Name | PAN-OS docs value | Correct variable name | Notes |
 |---|---|---|---|---|
 | User_ID_Log | FUTURE_USE | `FUTURE_USER` | `FUTURE_USE` | Typo in PAN-OS field table |
-| IP_Tag_Log, Auth, URL, Threat, User-ID | High Resolution Timestamp | `high_res` | `high_res_timestamp` | Truncated in PA field table |
+| IP_Tag_Log, Auth, URL, Threat, User-ID | High Resolution Timestamp | `high_res timestamp` | `high_res_timestamp` | Space instead of underscore in PA field table parenthetical |
 | IP_Tag_Log | Event ID | `event_id` | `eventid` | Underscore inconsistency |
 | Traffic_Log | Tunnel ID/IMSI | `tunnelid/imsi` | `tunnel_id/imsi` | Missing underscore before slash |
 | GTP_Log | A Slice Service Type | `nsdsai_sst` | `nssai_sst` | "nsdsai" → "nssai" typo in PA docs |

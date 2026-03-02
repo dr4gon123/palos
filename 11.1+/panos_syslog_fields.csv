@@ -1,7 +1,7 @@
 Traffic,Threat,URL Filtering,Data Filtering,HIP Match,GlobalProtect,IP Tag,User ID,Decryption,Tunnel Inspection,SCTP,Authentication,Config,System,Correlated Events,GTP,Audit
 FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,serial
 receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,receive_time,time_generated
-serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,subtype
+serial,serial #,serial #,serial #,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,serial,subtype
 type,type,type,type,type,type,type,type,type,type,type,type,type,type,type,type,FUTURE_USE
 subtype,subtype,subtype,subtype,subtype,subtype,subtype,subtype,subtype,subtype,FUTURE_USE,subtype,subtype,subtype,subtype,subtype,eventid
 FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,config_ver,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,FUTURE_USE,object
@@ -32,7 +32,7 @@ proto,proto,proto,proto,mac,location,,factorno,proto,proto,FUTURE_USE,device_nam
 action,action,action,action,high_res_timestamp,login_duration,,ugflags,action,action,proto,vsys_id,,,,action,
 bytes,misc,misc,misc,cluster_name,connect_method,,userbysource,tunnel,severity,action,authproto,,,,event_type,
 bytes_sent,threatid,threatid,threatid,,error_code,,tag_name,FUTURE_USE,seqno,dg_hier_level_1,rule_uuid,,,,msisdn,
-bytes_received,category,category,category,,portal,,high_res_timestamp,FUTURE_USE,actionflags,dg_hier_level_2,high_res_timestamp,,,,apn,
+bytes_received,category,category,category,,portal,,high_res_timestamp,FUTURE_USE,actionflags,dg_hier_level_2,high_res _timestamp,,,,apn,
 packets,severity,severity,severity,,seqno,,origindatasource,src_uuid,srcloc,dg_hier_level_3,src_category,,,,rat,
 start,direction,direction,direction,,actionflags,,FUTURE_USE,dst_uuid,dstloc,dg_hier_level_4,src_profile,,,,msg_type,
 elapsed,seqno,seqno,seqno,,high_res_timestamp,,cluster_name,rule_uuid,dg_hier_level_1,vsys_name,src_model,,,,end_ip_adr,
@@ -101,7 +101,7 @@ serial,pod_name,pod_name,pod_name,,,,,subcategory_of_app,,,,,,,,
 src_dag,src_edl,src_edl,src_edl,,,,,category_of_app,,,,,,,,
 dst_dag,dst_edl,dst_edl,dst_edl,,,,,technology_of_app,,,,,,,,
 session_owner,hostid,hostid,hostid,,,,,risk_of_app,,,,,,,,
-high_res_timestamp,serial,serial,serial,,,,,characteristic_of_app,,,,,,,,
+high_res_timestamp,serial #,serial #,serial #,,,,,characteristic_of_app,,,,,,,,
 nssai_sst,domain_edl,domain_edl,domain_edl,,,,,container_of_app,,,,,,,,
 nssai_sd,src_dag,src_dag,src_dag,,,,,is_saas_of_app,,,,,,,,
 subcategory_of_app,dst_dag,dst_dag,dst_dag,,,,,sanctioned_state_of_app,,,,,,,,
