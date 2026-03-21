@@ -36,6 +36,15 @@ and `Variable Name` columns inserted after `Field Name`. Variable names are extr
 parenthetical in each field's name (e.g. `Serial Number (serial)` → `serial`) and post-processed
 to fix PAN-OS docs inconsistencies. See [EDGE_CASES.md](EDGE_CASES.md) for the full list of corrections.
 
+## Field Mapping
+
+Scraped variable names are cross-referenced to standard security schemas for SIEM ingestion and field normalization. See [FIELD_MAPPING.md](FIELD_MAPPING.md) for full documentation.
+
+| Schema | Status | Output |
+|--------|--------|--------|
+| ECS (Elastic Common Schema) 9.3 | 71/297 fields mapped | `11.1+/ecs/panos_ecs_mapping.csv` |
+| OCSF | Planned | `11.1+/ocsf/` |
+
 ## Configuration
 
 Edit `paloalto_scraper_config.yaml` to customize behaviour:

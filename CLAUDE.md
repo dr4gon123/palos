@@ -19,6 +19,18 @@ pip install requests beautifulsoup4 pandas lxml pyyaml
 ### Dry run (preview without scraping)
 Set `dry_run: true` in `paloalto_scraper_config.yaml`, then run the scraper.
 
+### Rebuild ECS mapping skeleton (after re-scraping or variable name corrections)
+```bash
+python3 generate_ecs_skeleton.py
+```
+
+### Validate and apply ECS candidate mappings
+```bash
+python3 analyze_ecs_candidates.py           # generate ecs_candidates.csv for review
+python3 analyze_ecs_candidates.py --apply   # promote candidates into panos_ecs_mapping.csv
+python3 analyze_ecs_candidates.py --refresh # re-download ECS schema
+```
+
 ## Architecture
 
 This is a single-file web scraper (`paloalto_scraper.py`) with a YAML config (`paloalto_scraper_config.yaml`). It scrapes Palo Alto Networks PAN-OS syslog field documentation and outputs CSV datasets.
@@ -57,9 +69,17 @@ This is a single-file web scraper (`paloalto_scraper.py`) with a YAML config (`p
   {LogType}_format.csv       # e.g. Audit_format.csv, Traffic_format.csv (never Audit_Log_format.csv)
   {LogType}_fields.csv       # e.g. Audit_fields.csv — columns: Field Name, Field Name lookup, Variable Name, Description
   panos_syslog_fields.csv    # consolidated matrix across all log types
+  ecs/
+    panos_ecs_mapping.csv    # unified ECS field mapping (manually curated); see FIELD_MAPPING.md
+  ocsf/                      # placeholder for future OCSF mapping
 ```
 
 The log type name in config (e.g. `Audit_Log`) has `_Log` stripped when generating file names.
+
+**ECS mapping notation** (in `panos_ecs_mapping.csv`):
+- `=` direct 1:1 mapping, `->` derived/transformed
+- Multiple ECS targets per row: newline-within-cell, each column line corresponds to one target
+- See [FIELD_MAPPING.md](FIELD_MAPPING.md) for full notation reference and workflow
 
 ### Gotchas
 - `force_rescrape` is currently `true` in config — every run re-fetches all pages. Set to `false` to skip existing output.
