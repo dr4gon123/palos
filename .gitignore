@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
 
-# ECS mapping generated/cached artifacts
-11.1+/ecs/ecs_fields_*.csv
+# ECS mapping generated artifacts
 11.1+/ecs/ecs_candidates.csv

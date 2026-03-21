@@ -77,16 +77,6 @@ Rebuilds `panos_ecs_mapping.csv` from the current scraper output. Snapshots exis
 python3 generate_ecs_skeleton.py
 ```
 
-#### `analyze_ecs_candidates.py`
-
-Validates candidate PAN-OS → ECS mappings against the live ECS schema (downloaded from GitHub, cached locally and gitignored). Outputs `ecs_candidates.csv` for review, then promotes approved rows into the main mapping with `--apply`.
-
-```bash
-python3 analyze_ecs_candidates.py            # generate ecs_candidates.csv for review
-python3 analyze_ecs_candidates.py --apply    # promote candidates into panos_ecs_mapping.csv
-python3 analyze_ecs_candidates.py --refresh  # re-download ECS schema before running
-```
-
 ### Extending the mapping manually
 
 1. Open `11.1+/ecs/panos_ecs_mapping.csv`
