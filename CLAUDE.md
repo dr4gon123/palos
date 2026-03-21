@@ -24,12 +24,6 @@ Set `dry_run: true` in `paloalto_scraper_config.yaml`, then run the scraper.
 python3 generate_ecs_skeleton.py
 ```
 
-### Validate and apply ECS candidate mappings
-```bash
-python3 analyze_ecs_candidates.py           # generate ecs_candidates.csv for review
-python3 analyze_ecs_candidates.py --apply   # promote candidates into panos_ecs_mapping.csv
-python3 analyze_ecs_candidates.py --refresh # re-download ECS schema
-```
 
 ## Architecture
 
