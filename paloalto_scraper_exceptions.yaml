@@ -131,7 +131,8 @@ variable_name_corrections:
 
     # Field table typos / multi-word parentheticals: incorrect variable names produced by parenthetical extraction
     "FUTURE_USER": "FUTURE_USE" # User-ID log: typo in PA docs field table
-    "high_res timestamp": "high_res_timestamp" # IP-Tag, User-ID, Auth, URL, Threat, etc.: space in PA field table parenthetical
+    "high_res timestamp": "high_res_timestamp" # IP-Tag, User-ID, URL, Threat, etc.: space in PA field table parenthetical
+    "high_res _timestamp": "high_res_timestamp" # Authentication: PA docs typo — space before underscore in parenthetical
     "receive_time or cef-formatted-receive_time": "receive_time" # multi-word parenthetical
     "time_generated or cef-formatted-time_generated": "time_generated" # multi-word parenthetical
     "event_id": "eventid" # IP-Tag: underscore wrong in PA field table
