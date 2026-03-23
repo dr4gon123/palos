@@ -43,6 +43,7 @@ PAN-OS's GlobalProtect field table contains two serial-related rows:
 | `Serial Number (serialnumber)` | `Serial Number` | `serialnumber` |
 
 The format string has `"Serial Number"` at two positions:
+
 - Position 2 (firewall serial) → should map to `serial` via `Serial # (serial)`
 - Position 20 (machine serial) → should map to `serialnumber` via `Serial Number (serialnumber)`
 
@@ -189,6 +190,7 @@ empty Variable Name that gets written back), the raw long name passes through to
 **Note on Generate Time / Generated Time:** Most log types have table key "Generate Time" and
 format token "Generated Time". The global correction renames "Generate Time" → "Generated Time"
 so lookup succeeds and returns `time_generated` from the parenthetical. Two log types differ:
+
 - **IP_Tag_Log**: table "Generated Time", format "Generate Time" — per_log_type renames the table
   key "Generated Time" → "Generate Time", so lookup succeeds and returns `time_generated` from
   the parenthetical.
@@ -212,7 +214,8 @@ These are corrected via `variable_name_corrections.global` after lookup:
 | Log Type | Field Name | PAN-OS docs value | Correct variable name | Notes |
 |---|---|---|---|---|
 | User_ID_Log | FUTURE_USE | `FUTURE_USER` | `FUTURE_USE` | Typo in PAN-OS field table |
-| IP_Tag_Log, Auth, URL, Threat, User-ID | High Resolution Timestamp | `high_res timestamp` | `high_res_timestamp` | Space instead of underscore in PA field table parenthetical |
+| IP_Tag_Log, URL, Threat, User-ID | High Resolution Timestamp | `high_res timestamp` | `high_res_timestamp` | Space instead of underscore in PA field table parenthetical |
+| Authentication_Log | High Resolution Timestamp | `high_res _timestamp` | `high_res_timestamp` | Space before underscore in PA field table parenthetical |
 | IP_Tag_Log | Event ID | `event_id` | `eventid` | Underscore inconsistency |
 | Traffic_Log | Tunnel ID/IMSI | `tunnelid/imsi` | `tunnel_id/imsi` | Missing underscore before slash |
 | GTP_Log | A Slice Service Type | `nsdsai_sst` | `nssai_sst` | "nsdsai" → "nssai" typo in PA docs |
