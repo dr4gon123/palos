@@ -117,6 +117,7 @@ python3 generate_ecs_skeleton.py
 Some other PAN-OS-specific fields
 
 **Event classification — ECS controlled vocabularies:**
+
 ECS `event.*` fields (`event.kind`, `event.category`, `event.type`, `event.outcome`) are not free-form strings — they follow a strict controlled-vocabulary specification defined in the [ECS category field values reference](https://www.elastic.co/docs/reference/ecs/ecs-category-field-values-reference). Each field accepts only a fixed set of prescribed values with precise semantics (e.g. `event.kind` must be one of `alert`, `enrichment`, `event`, `metric`, `pipeline_error`, `signal`, `state`).
 
 PAN-OS fields like `type`, `subtype`, `action`, `reason`, and `session_end_reason` carry PAN-OS-specific semantics that don't translate cleanly to these prescribed value sets. While the [ECS guide for firewall events](https://www.elastic.co/docs/reference/ecs/ecs-using-categorization-fields#_firewall_blocking_a_network_connection) provides clear guidelines, Traffic is just one of PAN-OS's 17 log types, each with its own semantics and intent. Correctly populating ECS event fields requires interpreting that intent — understanding not just what the field value says, but what it means in context. This kind of per-log-type, interpretation-driven translation introduces an inherent bias and is outside the scope of PALOS's field-level schema documentation.
