@@ -1,10 +1,12 @@
 # PALOS — PAN-OS Logs Scraper
 
-PALOS is a web scraper that extracts Palo Alto Networks PAN-OS syslog field documentation
-from the official PAN-OS docs site and transforms it into clean, structured CSV datasets.
-It is designed for security engineers and data teams who need machine-readable syslog schemas
-for parser development, log normalization, or field reference — without manually crawling
-seventeen separate documentation pages per PAN-OS version.
+PALOS extracts Palo Alto Networks PAN-OS syslog field documentation from the official docs
+site and transforms it into clean, structured CSV datasets built for log normalization.
+Normalizing PAN-OS logs against ECS, OCSF, or a custom schema requires exact field names
+and positions across all 17 log types — information that PAN-OS spreads across seventeen
+separate documentation pages per version. PALOS collects and corrects it, delivering
+machine-readable syslog schemas ready for normalization pipelines, parser development,
+and field reference.
 
 ## Quick Start
 
@@ -36,13 +38,13 @@ and `Variable Name` columns inserted after `Field Name`. Variable names are extr
 parenthetical in each field's name (e.g. `Serial Number (serial)` → `serial`) and post-processed
 to fix PAN-OS docs inconsistencies. See [EDGE_CASES.md](EDGE_CASES.md) for the full list of corrections.
 
-## Field Mapping
+## Field Naming Normalization
 
-Scraped variable names are cross-referenced to standard security schemas for SIEM ingestion and field normalization. See [FIELD_MAPPING.md](FIELD_MAPPING.md) for full documentation.
+Scraped variable names are cross-referenced to standard security schemas for SIEM ingestion and field normalization. See [FIELD_NAMING_NORMALIZATION.md](FIELD_NAMING_NORMALIZATION.md) for full documentation.
 
 | Schema | Status | Output |
 |--------|--------|--------|
-| ECS (Elastic Common Schema) 9.3 | 71/297 fields mapped | `11.1+/ecs/panos_ecs_mapping.csv` |
+| ECS (Elastic Common Schema) | 71/297 fields mapped | `11.1+/ecs/panos_ecs_mapping.csv` |
 | OCSF | Planned | `11.1+/ocsf/` |
 
 ## Configuration

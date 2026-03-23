@@ -64,7 +64,7 @@ This is a single-file web scraper (`paloalto_scraper.py`) with a YAML config (`p
   {LogType}_fields.csv       # e.g. Audit_fields.csv — columns: Field Name, Field Name lookup, Variable Name, Description
   panos_syslog_fields.csv    # consolidated matrix across all log types
   ecs/
-    panos_ecs_mapping.csv    # unified ECS field mapping (manually curated); see FIELD_MAPPING.md
+    panos_ecs_mapping.csv    # unified ECS field mapping (manually curated); see FIELD_NAMING_NORMALIZATION.md
   ocsf/                      # placeholder for future OCSF mapping
 ```
 
@@ -73,7 +73,7 @@ The log type name in config (e.g. `Audit_Log`) has `_Log` stripped when generati
 **ECS mapping notation** (in `panos_ecs_mapping.csv`):
 - `=` direct 1:1 mapping, `->` derived/transformed
 - Multiple ECS targets per row: newline-within-cell, each column line corresponds to one target
-- See [FIELD_MAPPING.md](FIELD_MAPPING.md) for full notation reference and workflow
+- See [FIELD_NAMING_NORMALIZATION.md](FIELD_NAMING_NORMALIZATION.md) for full notation reference and workflow
 
 ### Gotchas
 - `force_rescrape` is currently `true` in config — every run re-fetches all pages. Set to `false` to skip existing output.

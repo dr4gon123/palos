@@ -1,10 +1,22 @@
-# Field Mapping Guide
+# Field Naming Normalization Guide
 
-PALOS maps scraped PAN-OS variable names to standard security schemas, enabling direct use of the output CSV datasets in SIEM ingestion pipelines, detection rules, and cross-source field normalization.
+## Background
+
+Raw PAN-OS syslog fields — `src`, `dst`, `app`, `action`, `serial`, and 290+ more — are meaningful within Palo Alto's own ecosystem, but become opaque the moment logs land in a multi-source SIEM alongside firewall, endpoint, identity, and cloud telemetry. Field name normalization is the process of mapping vendor-specific field names to a shared schema, enabling cross-source correlation, unified detection rules, and consistent dashboards without per-source query rewrites.
+
+PALOS targets two schemas:
+
+**ECS (Elastic Common Schema)** is an open, vendor-neutral field naming standard maintained by Elastic. Critically, ECS is [converging](https://www.elastic.co/docs/reference/ecs/ecs-otel-alignment-overview) with OpenTelemetry (OTel), the CNCF standard for observability instrumentation. This convergence means that ECS-normalized fields will be natively compatible with the OTel ecosystem, giving ECS-aligned data a path into both security and observability pipelines under a single, fully open-source, industry-wide standard.
+
+**OCSF (Open Cybersecurity Schema Framework)** is a vendor-neutral, open standard developed by a cross-industry consortium including AWS, Splunk, IBM, CrowdStrike, Palo Alto Networks, and others. OCSF defines a full event taxonomy with typed categories and classes
+
+Together, ECS and OCSF cover the two dominant normalization approaches — field naming and event classification — that security teams are converging on.
+
+PALOS maps PAN-OS variable names to both, enabling the output CSV datasets to feed directly into SIEM ingestion pipelines, detection rules, and cross-source normalization workflows.
 
 | Schema | Status | Output |
 |--------|--------|--------|
-| ECS (Elastic Common Schema) 9.3 | Active — 71/297 fields mapped | `{version}/ecs/panos_ecs_mapping.csv` |
+| ECS (Elastic Common Schema) | Active — 71/297 fields mapped | `{version}/ecs/panos_ecs_mapping.csv` |
 | OCSF | Planned | `{version}/ocsf/` |
 
 ---
@@ -29,35 +41,40 @@ PALOS maps scraped PAN-OS variable names to standard security schemas, enabling 
 ### Notation
 
 **Mapping type:**
+
 - `=` — direct 1:1 mapping; value is copied as-is to the ECS field
 - `->` — derived or transformed; value is computed, converted, parsed, or aggregated
 
 **Multiple ECS targets per PAN-OS field** use newline-within-cell encoding: each line in the `ECS Field`, `ECS Type`, `ECS Description`, and `Mapping Type` columns corresponds to one ECS target, in order.
 
 **Example — `src`:**
+
 ```
 Mapping Type:    =              =          =           ->
 ECS Field:       source.address source.ip  related.ip  network.community_id
 ECS Type:        keyword        ip         ip          keyword
 ```
+
 - `source.address` (=): raw address string
 - `source.ip` (=): typed IP field enabling range queries
 - `related.ip` (=): contributes to the event-wide IP array
 - `network.community_id` (->): derived from the full 5-tuple (src, dst, proto, sport, dport)
 
 **Example — `proto`:**
+
 ```
 Mapping Type:    =                  ->                    ->
 ECS Field:       network.transport  network.iana_number   network.community_id
 ```
 
 **Example — `user_agent`:**
+
 ```
 Mapping Type:    =                     ->              ->                  ->              ->
 ECS Field:       user_agent.original   user_agent.name user_agent.version  user_agent.os.name user_agent.os.version
 ```
 
-### Coverage (ECS 9.3 / PAN-OS 11.1+)
+### Coverage (PAN-OS 11.1+)
 
 - **297** unique variable names across 17 log types
 - **71** mapped to ECS (~24%)
@@ -70,8 +87,9 @@ ECS Field:       user_agent.original   user_agent.name user_agent.version  user_
 Rebuilds `panos_ecs_mapping.csv` from the current scraper output. Snapshots existing ECS mappings before regenerating, then re-applies them — so no manual work is lost.
 
 **When to run:**
+
 - After scraping a new PAN-OS version
-- After applying variable name corrections that change field names (e.g. the `high_res_timestamp` fix)
+- After applying variable name corrections that change field names
 
 ```bash
 python3 generate_ecs_skeleton.py
@@ -88,18 +106,22 @@ python3 generate_ecs_skeleton.py
 ### Fields intentionally left unmapped
 
 **PAN-OS-specific — no ECS equivalent:**
+
 - Virtual system hierarchy: `vsys`, `vsys_id`, `vsys_name`, `dg_hier_level_1–4`, `dg_id`
-- Infrastructure: `cluster_name`, `logset`, `actionflags`, `repeatcnt`, `policy_id`, `policy_name`
+- Infrastructure: `cluster_name`, `logset`, `actionflags`, `repeatcnt`
 - App-ID classification: `category_of_app`, `subcategory_of_app`, `technology_of_app`, `risk_of_app`, `characteristic_of_app`, `container_of_app`, `is_saas_of_app`, `sanctioned_state_of_app`
-- SD-WAN: `sdwan_cluster`, `sdwan_cluster_type`, `sdwan_device_type`, `sdwan_site`
+- SD-WAN: `sdwan_cluster`, `sdwan_cluster_type`, `sdwan_device_type`, `sdwan_site`, `policy_id`
 - SCTP/Diameter: `assoc_id`, `sctp_*`, `diam_*`, `stream_id`, `verif_tag_*`
 - 4G/5G telecom: `msisdn`, `apn`, `rat`, `imsi`, `imei`, `mcc`, `mnc`, `gtp_*`, `teid*`, `nssai_*`
 - TCP performance metrics: `tcp_rtt_*`, `tcp_retransit_cnt_*`, `tcp_zero_window_cnt_*`, `total_n_ooseq_*`
 - AI traffic: `ai_traffic`, `ai_fwd_error`
 
-**Event classification — vocabulary mismatch with ECS:**
-The following fields are not mapped because PAN-OS values don't align with ECS expected vocabularies (ECS `event.kind`, `event.category`, etc. have controlled value sets):
-`type`, `subtype`, `action`, `severity`, `reason`, `session_end_reason`, `eventid`, `direction`, `status`, `category`
+Some other PAN-OS-specific fields
+
+**Event classification — ECS controlled vocabularies:**
+ECS `event.*` fields (`event.kind`, `event.category`, `event.type`, `event.outcome`) are not free-form strings — they follow a strict controlled-vocabulary specification defined in the [ECS category field values reference](https://www.elastic.co/docs/reference/ecs/ecs-category-field-values-reference). Each field accepts only a fixed set of prescribed values with precise semantics (e.g. `event.kind` must be one of `alert`, `enrichment`, `event`, `metric`, `pipeline_error`, `signal`, `state`).
+
+PAN-OS fields like `type`, `subtype`, `action`, `reason`, and `session_end_reason` carry PAN-OS-specific semantics that don't translate cleanly to these prescribed value sets. While the [ECS guide for firewall events](https://www.elastic.co/docs/reference/ecs/ecs-using-categorization-fields#_firewall_blocking_a_network_connection) provides clear guidelines, Traffic is just one of PAN-OS's 17 log types, each with its own semantics and intent. Correctly populating ECS event fields requires interpreting that intent — understanding not just what the field value says, but what it means in context. This kind of per-log-type, interpretation-driven translation introduces an inherent bias and is outside the scope of PALOS's field-level schema documentation.
 
 ---
 
