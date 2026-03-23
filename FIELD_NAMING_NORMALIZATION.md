@@ -1,7 +1,5 @@
 # Field Naming Normalization Guide
 
-## Background
-
 Raw PAN-OS syslog fields — `src`, `dst`, `app`, `action`, `serial`, and 290+ more — are meaningful within Palo Alto's own ecosystem, but become opaque the moment logs land in a multi-source SIEM alongside firewall, endpoint, identity, and cloud telemetry. Field name normalization is the process of mapping vendor-specific field names to a shared schema, enabling cross-source correlation, unified detection rules, and consistent dashboards without per-source query rewrites.
 
 PALOS targets two schemas:
