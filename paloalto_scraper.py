@@ -25,6 +25,14 @@ from typing import List, Dict, Optional, Tuple
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Priority order for selecting field name/description when a variable appears in multiple log types
+DESCRIPTION_PRIORITY = [
+    "Traffic", "Threat", "URL Filtering", "Data Filtering",
+    "Decryption", "Tunnel Inspection", "GlobalProtect", "Authentication",
+    "GTP", "SCTP", "HIP Match", "User ID", "IP Tag",
+    "Config", "System", "Correlated Events", "Audit",
+]
+
 class PaloAltoLogScraper:
     def __init__(self, config_file='paloalto_scraper_config.yaml', base_delay=None):
         """
@@ -71,6 +79,9 @@ class PaloAltoLogScraper:
         self.variable_name_corrections_global = exceptions.get('variable_name_corrections', {}).get('global', {})
         self.variable_name_corrections_per_log = exceptions.get('variable_name_corrections', {}).get('per_log_type', {})
         self.per_log_corrections = exceptions.get('per_log_corrections', {})
+
+        # Accumulator for consolidated fields output (reset per version)
+        self._consolidated_fields: Dict[str, Dict] = {}
 
         logger.info(f"Loaded {len(self.versions)} versions from main config")
         logger.info(f"Force rescrape: {self.force_rescrape}")
@@ -472,6 +483,73 @@ class PaloAltoLogScraper:
 
         return corrected_tokens, field_table
 
+    def _accumulate_consolidated_fields(
+        self,
+        output_tokens: List[str],
+        field_table: Optional[pd.DataFrame],
+        log_type_name: str
+    ) -> None:
+        """
+        Accumulate variable-to-field mappings for consolidated output.
+
+        For each variable in output_tokens (excluding FUTURE_USE and empty),
+        stores field name, description, and which log types use it.
+        Uses DESCRIPTION_PRIORITY to select best field name/description when
+        a variable appears in multiple log types.
+
+        Args:
+            output_tokens: Final variable names after all corrections
+            field_table: Field table DataFrame with Variable Name and Description
+            log_type_name: Name of the log type being processed
+        """
+        # Build lookup from Variable Name → (Field Name lookup, Description)
+        var_to_info: Dict[str, Tuple[str, str]] = {}
+        if field_table is not None and 'Variable Name' in field_table.columns:
+            for _, row in field_table.iterrows():
+                var_name = row.get('Variable Name', '')
+                if pd.isna(var_name) or str(var_name) == '':
+                    continue
+                var_name = str(var_name)
+                field_name = row.get('Field Name lookup', '')
+                field_name = '' if pd.isna(field_name) else str(field_name)
+                description = row.get('Description', '')
+                description = '' if pd.isna(description) else str(description)
+                if var_name not in var_to_info:
+                    var_to_info[var_name] = (field_name, description)
+
+        # Display name for log type (strip _Log suffix, replace underscores)
+        display_name = re.sub(r'_Log$', '', log_type_name).replace('_', ' ')
+
+        # Get priority index for this log type (lower = higher priority)
+        try:
+            priority = DESCRIPTION_PRIORITY.index(display_name)
+        except ValueError:
+            priority = len(DESCRIPTION_PRIORITY)  # Unknown log types get lowest priority
+
+        for var_name in output_tokens:
+            if not var_name or var_name == 'FUTURE_USE':
+                continue
+
+            if var_name not in self._consolidated_fields:
+                field_name, description = var_to_info.get(var_name, ('', ''))
+                self._consolidated_fields[var_name] = {
+                    'field_name': field_name,
+                    'description': description,
+                    'log_types': {display_name},
+                    'priority': priority,
+                }
+            else:
+                # Add log type to set
+                self._consolidated_fields[var_name]['log_types'].add(display_name)
+                # Update field_name/description if this log type has higher priority
+                existing_priority = self._consolidated_fields[var_name]['priority']
+                if priority < existing_priority:
+                    field_name, description = var_to_info.get(var_name, ('', ''))
+                    if field_name or description:
+                        self._consolidated_fields[var_name]['field_name'] = field_name
+                        self._consolidated_fields[var_name]['description'] = description
+                        self._consolidated_fields[var_name]['priority'] = priority
+
     def _get_cell_text_with_formatting(self, cell) -> str:
         """
         Extract text from a BeautifulSoup cell while preserving
@@ -547,6 +625,10 @@ class PaloAltoLogScraper:
             output_tokens = format_tokens
         else:
             output_tokens = []
+
+        # Accumulate for consolidated fields output
+        if output_tokens:
+            self._accumulate_consolidated_fields(output_tokens, field_table, log_type['name'])
 
         file_prefix = re.sub(r'_Log$', '', log_type['name'])
 
@@ -640,6 +722,46 @@ class PaloAltoLogScraper:
         except Exception as e:
             logger.error(f"Matrix: cannot save {matrix_path}: {e}")
 
+    def _write_consolidated_fields(self, version_dir: str) -> None:
+        """Write the consolidated fields CSV from accumulated data.
+
+        Output columns: Variable Name, Field Name, Log Types, PAN-OS Description
+        Sorted by: number of log types (descending), then alphabetically by variable name.
+        """
+        if not self._consolidated_fields:
+            logger.warning("No consolidated fields to write")
+            return
+
+        # Build rows sorted by (num_log_types desc, variable_name asc)
+        rows = []
+        for var_name, info in self._consolidated_fields.items():
+            # Sort log types by DESCRIPTION_PRIORITY order
+            sorted_log_types = [lt for lt in DESCRIPTION_PRIORITY if lt in info['log_types']]
+            sorted_log_types += sorted(info['log_types'] - set(DESCRIPTION_PRIORITY))
+            log_types_str = ','.join(sorted_log_types)
+
+            rows.append({
+                'Variable Name': var_name,
+                'Field Name': info['field_name'],
+                'Log Types': log_types_str,
+                'PAN-OS Description': info['description'],
+            })
+
+        # Sort: more log types first, then alphabetically
+        rows.sort(key=lambda r: (-r['Log Types'].count(',') - 1, r['Variable Name']))
+
+        output_path = os.path.join(version_dir, 'panos_consolidated_fields.csv')
+        try:
+            with open(output_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=[
+                    'Variable Name', 'Field Name', 'Log Types', 'PAN-OS Description'
+                ])
+                writer.writeheader()
+                writer.writerows(rows)
+            logger.info(f"Saved consolidated fields to {output_path} ({len(rows)} rows)")
+        except Exception as e:
+            logger.error(f"Cannot save consolidated fields: {e}")
+
     def scrape_version(self, version: dict) -> int:
         """
         Scrape all log types for a specific PAN-OS version
@@ -651,6 +773,9 @@ class PaloAltoLogScraper:
             Number of successfully processed log types
         """
         logger.info(f"Starting scrape for PAN-OS version {version['name']}")
+
+        # Reset consolidated fields accumulator for this version
+        self._consolidated_fields = {}
 
         # Create version directory
         version_dir = self.get_version_directory(version['name'])
@@ -664,6 +789,7 @@ class PaloAltoLogScraper:
                 successful_count += 1
 
         self._build_consolidated_matrix(version_dir, version['log_types'])
+        self._write_consolidated_fields(version_dir)
 
         return successful_count
 

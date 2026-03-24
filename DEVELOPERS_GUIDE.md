@@ -96,6 +96,14 @@ paloalto_scraper_exceptions.yaml  # Known PAN-OS docs corrections (see below)
                                ▼
                       panos_syslog_fields.csv
                       (rows = positions, columns = log types)
+
+                  _write_consolidated_fields()
+                  writes accumulated variable→field mappings
+                  (accumulated during each scrape_log_type call)
+                               │
+                               ▼
+                      panos_consolidated_fields.csv
+                      (rows = unique variables, sorted by log type coverage)
 ```
 
 Stages 3–5 (field name lookup corrections → lookup → variable name corrections) are where
@@ -172,6 +180,39 @@ Applies variable name corrections to both the token list and the `Variable Name`
 - `variable_name_corrections.per_log_type`: applied to the **first occurrence only** in the token list
 - Both correction sets are applied to the field table `Variable Name` column with replace-all semantics
 
+### Stage 6 — `_accumulate_consolidated_fields(output_tokens, field_table, log_type_name)`
+
+Called at the end of each `scrape_log_type()`, this method accumulates variable-to-field mappings
+in `self._consolidated_fields` for consolidated output. For each variable in `output_tokens`
+(excluding `FUTURE_USE` and empty strings):
+
+- Looks up the field name and description from the field table
+- Tracks which log types use each variable
+- Uses `DESCRIPTION_PRIORITY` to select the best field name/description when a variable appears
+  in multiple log types (Traffic has highest priority, Audit has lowest)
+
+The `DESCRIPTION_PRIORITY` constant at module level defines the priority order:
+```python
+DESCRIPTION_PRIORITY = [
+    "Traffic", "Threat", "URL Filtering", "Data Filtering",
+    "Decryption", "Tunnel Inspection", "GlobalProtect", "Authentication",
+    "GTP", "SCTP", "HIP Match", "User ID", "IP Tag",
+    "Config", "System", "Correlated Events", "Audit",
+]
+```
+
+### Stage 7 — `_write_consolidated_fields(version_dir)`
+
+Called at the end of `scrape_version()` after all log types have been processed. Writes the
+accumulated variable mappings to `panos_consolidated_fields.csv` with columns:
+
+- **Variable Name**: the final variable name after all corrections
+- **Field Name**: the field name from the field table (using DESCRIPTION_PRIORITY for selection)
+- **Log Types**: comma-separated list of log types that use this variable
+- **PAN-OS Description**: the field description (using DESCRIPTION_PRIORITY for selection)
+
+Rows are sorted by log type coverage (descending), then alphabetically by variable name.
+
 ---
 
 ## Key Methods Reference
@@ -187,6 +228,8 @@ Applies variable name corrections to both the token list and the `Variable Name`
 | `_apply_variable_name_corrections(tokens, field_table, log_type_name)` | Corrects variable names in both token list and field table | Global: replace-all; per-log-type: first-occurrence on token list, replace-all on field table |
 | `_apply_per_log_corrections(tokens, log_type_name)` | Position- or value-based fixes on raw format tokens | `match` key for value-based (preferred); `position` for index-based; bounds checked |
 | `_get_cell_text_with_formatting(cell)` | HTML cell → text preserving intentional line breaks | Block elements get `\n`; source whitespace collapsed |
+| `_accumulate_consolidated_fields(tokens, field_table, log_type_name)` | Accumulates variable-to-field mappings for consolidated output | Uses DESCRIPTION_PRIORITY for field name/description selection |
+| `_write_consolidated_fields(version_dir)` | Writes consolidated fields CSV from accumulated data | Sorts by log type count desc, then alphabetically |
 
 ---
 

@@ -1,0 +1,544 @@
+Variable Name,Field Name,Log Types,PAN-OS Description
+time_generated,Generated Time,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events,Audit",Time the log was generated on the dataplane.
+receive_time,Receive Time,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",Time the log was received at the management plane.
+subtype,Threat/Content Type,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events,Audit","Subtype of traffic log; values are start, end, drop, and deny
+
+Start—session started
+
+End—session ended
+
+Drop—session dropped before the application is identified and there is no rule that allows the session.
+
+Deny—session dropped after the application is identified and there is a rule to block or no rule that allows the session."
+type,Type,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",Specifies the type of log; value is TRAFFIC.
+vsys,Virtual System,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",Virtual System associated with the session.
+device_name,Device Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",The hostname of the firewall on which the session was logged.
+dg_hier_level_1,,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",
+dg_hier_level_2,,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",
+dg_hier_level_3,,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",
+dg_hier_level_4,,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",
+high_res_timestamp,High Resolution Timestamp,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System","Time in milliseconds the log was received at the management plane.
+
+The format for this new field is YYYY-MM-DDThh:ss:sssTZD:
+
+YYYY—Four digit year
+
+MM—Two-digit month
+
+DD—Two-digit day of the month (01 through 31)
+
+T—Indicator for the beginning of the timestamp
+
+hh—Two-digit hour using 24-hour time (00 through 23)
+
+mm—Two-digit minute (00 through 59)
+
+ss—Two-digit second (00 through 60)
+
+sss—One or more digits for millisecond
+
+TZD—Time zone designator (+hh:mm or -hh:mm)
+
+FM Dita Overlay for Notes Component
+
+The High Resolution Timestamp is supported for logs received from managed firewalls running PAN-OS 10.0 and later releases. Logs received from managed firewalls running PAN-OS 9.1 and earlier releases display a 1969-12-31T16:00:00:000-8:00 timestamp regardless of when the log was received."
+vsys_name,Virtual System Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",The name of the virtual system associated with the session; only valid on firewalls enabled for multiple virtual systems.
+seqno,Sequence Number,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System",A 64-bit log entry identifier incremented sequentially; each log type has a unique number space.
+serial,Serial Number,"Traffic,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events,Audit",Serial number of the firewall that generated the log.
+actionflags,Action Flags,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,HIP Match,User ID,IP Tag,Config,System",A bit field indicating if the log was forwarded to Panorama.
+repeatcnt,Repeat Count,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag","Number of sessions with same Source IP, Destination IP, Application, and Subtype seen within 5 seconds."
+cluster_name,Cluster Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,HIP Match,User ID,IP Tag",Name of the CN-Series firewall cluster.
+src,Source Address,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP,HIP Match,IP Tag,Correlated Events",Original session source IP address.
+logset,Log Action,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,Authentication,GTP,SCTP",Log Forwarding Profile that was applied to the session.
+rule_uuid,Rule UUID,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,Authentication,GTP,SCTP",The UUID that permanently identifies the rule.
+sessionid,Session ID,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,Authentication,GTP,SCTP",An internal numerical identifier applied to each session.
+severity,Severity,"Threat,URL Filtering,Data Filtering,Tunnel Inspection,GTP,SCTP,System,Correlated Events,Audit","Severity associated with the threat; values are informational, low, medium, high, critical."
+srcuser,Source User,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,HIP Match,Correlated Events",Username of the user who initiated the session.
+action,Action,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP","Action taken for the session; possible values are:
+
+allow—session was allowed by policy
+
+deny—session was denied by policy
+
+drop—session was dropped silently
+
+drop ICMP—session was silently dropped with an ICMP unreachable message to the host or application
+
+reset both—session was terminated and a TCP reset is sent to both the sides of the connection
+
+reset client—session was terminated and a TCP reset is sent to the client
+
+reset server—session was terminated and a TCP reset is sent to the server"
+dport,Destination Port,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Destination port utilized by the session.
+dst,Destination Address,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Original session destination IP address.
+from,Source Zone,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Zone the session was sourced from.
+inbound_if,Inbound Interface,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Interface that the session was sourced from.
+outbound_if,Outbound Interface,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Interface that the session was destined to.
+proto,Protocol,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",IP protocol associated with the session.
+rule,Rule Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Name of the rule that the session matched.
+sport,Source Port,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Source port utilized by the session.
+to,Destination Zone,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Zone the session was destined to.
+app,Application,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP",Application associated with the session.
+category_of_app,Application Category,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP","The application category specified in the application configuration properties. Values are:
+
+business-systems
+
+collaboration
+
+general-internet
+
+media
+
+networking
+
+saas"
+characteristic_of_app,Application Characteristic,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP",Comma-separated list of applicable characteristic of the application
+container_of_app,Application Container,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP",The parent application for an application.
+is_saas_of_app,Application SaaS,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP",Displays 1 if a SaaS application or 0 if not a SaaS application.
+risk_of_app,Application Risk,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP",Risk level associated with the application (1=lowest to 5=highest).
+sanctioned_state_of_app,Application Sanctioned State,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP",Displays 1 if application is sanctioned or 0 if application is not sanctioned.
+subcategory_of_app,Application Subcategory,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP",The application subcategory specified in the application configuration properties.
+technology_of_app,Application Technology,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP","The application technology specified in the application configuration properties. Values are:
+
+browser-based
+
+client-server
+
+network-protocol
+
+peer-to-peer"
+vsys_id,Virtual System ID,"Decryption,GlobalProtect,Authentication,HIP Match,User ID,IP Tag,Correlated Events",A unique identifier for a virtual system on a Palo Alto Networks firewall.
+dst_edl,Destination External Dynamic List,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection",The name of the external dynamic list that contains the destination IP address of the traffic.
+dstloc,Destination Country,"Traffic,Threat,URL Filtering,Data Filtering,Tunnel Inspection,GTP",Destination country or Internal region for private addresses. Maximum length is 32 bytes.
+dstuser,Destination User,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection",Username of the user to which the session was destined.
+flags,Flags,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection","32-bit field that provides details on session; this field can be decoded by AND-ing the values with the logged value:
+
+0x80000000—session has a packet capture (PCAP)
+
+0x40000000—option is enabled to allow a client to use multiple paths to connect to a destination host
+
+0x20000000—indicates whether a sample has been submitted for analysis using the WildFire public or private cloud channel
+
+0x10000000—enterprise credential submission by end user detected
+
+0x08000000— source for the flow is on the allow list and not subject to recon protection
+
+0x02000000—IPv6 session
+
+0x01000000—SSL session is decrypted (SSL Proxy)
+
+0x00800000—session is denied via URL filtering
+
+0x00400000—session has a NAT translation performed
+
+0x00200000—user information for the session was captured through Authentication Portal
+
+0x00100000—application traffic is on a non-standard destination port
+
+0x00080000 —X-Forwarded-For value from a proxy is in the source user field
+
+0x00040000—log corresponds to a transaction within a http proxy session (Proxy Transaction)
+
+0x00020000—Client to Server flow is subject to policy based forwarding
+
+0x00010000—Server to Client flow is subject to policy based forwarding
+
+0x00008000—session is a container page access (Container Page)
+
+0x00002000—session has a temporary match on a rule for implicit application dependency handling. Available in PAN-OS 5.0.0 and above.
+
+0x00000800—symmetric return is used to forward traffic for this session
+
+0x00000400—decrypted traffic is being sent out clear text through a mirror port
+
+0x00000100—payload of the outer tunnel is being inspected"
+hostid,Host ID,"Traffic,Threat,URL Filtering,Data Filtering,GlobalProtect,HIP Match",Unique ID GlobalProtect assigns to identify the host.
+natdport,NAT Destination Port,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection",Post-NAT destination port.
+natdst,NAT Destination IP,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection","If Destination NAT performed, the post-NAT Destination IP address."
+natsport,NAT Source Port,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection",Post-NAT source port.
+natsrc,NAT Source IP,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection","If Source NAT performed, the post-NAT Source IP address."
+src_category,Source Device Category,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The category for the device that Device-ID identifies as the source of the traffic.
+src_edl,Source External Dynamic List,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection",The name of the external dynamic list that contains the source IP address of the traffic.
+src_host,Source Hostname,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The hostname of the device that Device-ID identifies as the source of the traffic.
+src_mac,Source MAC Address,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The MAC address for the device that Device-ID identifies as the source of the traffic.
+src_model,Source Device Model,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The model of the device that Device-ID identifies as the source of the traffic.
+src_osfamily,Source Device OS Family,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The operating system type for the device that Device-ID identifies as the source of the traffic.
+src_osversion,Source Device OS Version,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The version of the operating system for the device that Device-ID identifies as the source of the traffic.
+src_profile,Source Device Profile,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The device profile for the device that Device-ID identifies as the source of the traffic.
+src_vendor,Source Device Vendor,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The vendor of the device that Device-ID identifies as the source of the traffic.
+srcloc,Source Country,"Traffic,Threat,URL Filtering,Data Filtering,Tunnel Inspection,GTP",Source country or Internal region for private addresses; maximum length is 32 bytes.
+tunnel,Tunnel Type,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection","Type of tunnel, such as GRE or IPSec."
+assoc_id,SCTP Association ID,"Traffic,Threat,URL Filtering,Data Filtering,SCTP",Number that identifies all connections for an association between two SCTP endpoints.
+category,Category,"Traffic,Threat,URL Filtering,Data Filtering,Correlated Events",URL category associated with the session (if applicable).
+container_id,Container ID,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The container ID of the PAN-NGFW pod on the Kubernetes node where the application POD is deployed.
+dst_category,Destination Device Category,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The category for the device that Device-ID identifies as the destination for the traffic.
+dst_dag,Destination Dynamic Address Group,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",Original destination source dynamic address group.
+dst_host,Destination Hostname,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The hostname of the device that Device-ID identifies as the destination for the traffic.
+dst_mac,Destination MAC Address,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The MAC address for the device that Device-ID identifies as the destination for the traffic.
+dst_model,Destination Device Model,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The model of the device that Device-ID identifies as the destination for the traffic.
+dst_osfamily,Destination Device OS Family,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The operating system type for the device that Device-ID identifies as the destination for the traffic.
+dst_osversion,Destination Device OS Version,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The version of the operating system for the device that Device-ID identifies as the destination for the traffic.
+dst_profile,Destination Device Profile,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The device profile for the device that Device-ID identifies as the destination for the traffic.
+dst_uuid,Destination VM UUID,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",Identifies the destination universal unique identifier for a guest virtual machine in the VMware NSX environment.
+dst_vendor,Destination Device Vendor,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The vendor of the device that Device-ID identifies as the destination for the traffic.
+dynusergroup_name,Dynamic User Group Name,"Traffic,Threat,URL Filtering,Data Filtering,Tunnel Inspection",Name of the dynamic user group that contains the user who initiated the session.
+eventid,Event ID,"GlobalProtect,User ID,IP Tag,System,Audit",A string showing the name of the event.
+monitortag/imei,Monitor Tag/IMEI,"Traffic,Threat,URL Filtering,Data Filtering,Tunnel Inspection",International Mobile Equipment Identity (IMEI) is a unique 15 or 16 digit number allocated to each mobile station equipment.
+nssai_sst,A Slice Service Type,"Traffic,Threat,URL Filtering,Data Filtering,GTP",The A Slice Service Type of the Network Slice ID.
+parent_session_id,Parent Session ID,"Traffic,Threat,URL Filtering,Data Filtering,Tunnel Inspection",ID of the session in which this session is tunneled. Applies to inner tunnel (if two levels of tunneling) or inside content (if one level of tunneling) only.
+parent_start_time,Parent Start Time,"Traffic,Threat,URL Filtering,Data Filtering,Tunnel Inspection",Year/month/day hours:minutes:seconds that the parent tunnel session began.
+pcap_id,PCAP_ID,"Threat,URL Filtering,Data Filtering,Tunnel Inspection,GTP","The packet capture (pcap) ID is a 64 bit unsigned integral denoting an ID to correlate threat pcap files with extended pcaps taken as a part of that flow. All threat logs will contain either a pcap_id of 0 (no associated pcap), or an ID referencing the extended pcap file."
+pod_name,POD Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The application POD being secured.
+pod_namespace,POD Namespace,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",The namespace of the application POD being secured.
+src_dag,Source Dynamic Address Group,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",Original session source dynamic address group.
+src_uuid,Source VM UUID,"Traffic,Threat,URL Filtering,Data Filtering,Decryption",Identifies the source universal unique identifier for a guest virtual machine in the VMware NSX environment.
+tunnel_id/imsi,Tunnel ID/IMSI,"Traffic,Threat,URL Filtering,Data Filtering,Tunnel Inspection",International Mobile Subscriber Identity (IMSI) is a unique number allocated to each mobile subscriber in the GSM/UMTS/EPS system. IMSI shall consist of decimal digits (0 through 9) only and maximum number of digits allowed are 15.
+flow_type,Flow Type,"Traffic,Threat,URL Filtering,Data Filtering","Identifies the type of proxy used for traffic. If a proxy is used, Explicit Proxy or Transparent Proxy is displayed. If no proxy is used, NonProxyTraffic is displayed."
+http2_connection,HTTP/2 Connection,"Traffic,Threat,URL Filtering,Data Filtering","Identifies if traffic used an HTTP/2 Connection by displaying one of the following values:
+
+Parent session ID—HTTP/2 connection
+
+0—SSL session"
+ppid,Payload Protocol ID,"Threat,URL Filtering,Data Filtering,SCTP",ID of the protocol for the payload in the data portion of the data chunk.
+reason,Reason,"Threat,URL Filtering,Data Filtering,GlobalProtect",Reason for Data Filtering action.
+tunneled_app,Tunneled Application,"Traffic,Threat,URL Filtering,Data Filtering",Name of the tunneled application.
+user_agent,User Agent,"Threat,URL Filtering,Data Filtering,Authentication","Only for the URL Filtering subtype; all other types do not use this field.
+
+The User Agent field specifies the web browser that the user used to access the URL, for example Internet Explorer. This information is sent in the HTTP request to the server."
+xff_ip,XFF Address,"Traffic,Threat,URL Filtering,Data Filtering","The IP address of the user who requested the web page or the IP address of the next to last device that the request traversed. If the request goes through one or more proxies, load balancers, or other upstream devices, the firewall displays the IP address of the most recent device.
+
+FM Dita Overlay for Notes Component
+
+Based on different appliance implementations, the XFF field may contain non-IP address values."
+cloud,Cloud,"Threat,URL Filtering,Data Filtering","Only for WildFire subtype; all other types do not use this field.
+
+The cloud string displays the FQDN of either the WildFire appliance (private) or the WildFire cloud (public) from where the file was uploaded for analysis."
+cloud_reportid,Cloud Report ID,"Threat,URL Filtering,Data Filtering","(PAN-OS 10.2.0) Unique 32 character ID for a file scanned by the DLP cloud service sent by a firewall.
+
+(PAN-OS 10.2.1 and later releases) Unique 67 character ID for a file scanned by the DLP cloud service sent by a firewall.
+
+The same Cloud Report ID is displayed for a file the DLP cloud service has already scanned and generated a Cloud Report ID for."
+contenttype,Content Type,"Threat,URL Filtering,Data Filtering","Applicable only when Subtype is URL.
+
+Content type of the HTTP response data. Maximum length 32 bytes."
+contentver,Content Version,"Threat,URL Filtering,Data Filtering",Applications and Threats version on your firewall when the log was generated.
+direction,Direction,"Threat,URL Filtering,Data Filtering","Indicates the direction of the attack, client-to-server or server-to-client:
+
+0—direction of the threat is client to server
+
+1—direction of the threat is server to client"
+domain_edl,Domain EDL,"Threat,URL Filtering,Data Filtering",The name of the external dynamic list that contains the domain name of the traffic.
+elapsed,Elapsed Time,"Traffic,Tunnel Inspection,GTP",Elapsed time of the session.
+filedigest,File Digest,"Threat,URL Filtering,Data Filtering","Only for WildFire subtype; all other types do not use this field
+
+The filedigest string shows the binary hash of the file sent to be analyzed by the WildFire service."
+filetype,File Type,"Threat,URL Filtering,Data Filtering","Only for WildFire subtype; all other types do not use this field.
+
+Specifies the type of file that the firewall forwarded for WildFire analysis."
+http_headers,HTTP Headers,"Threat,URL Filtering,Data Filtering",Indicates the inserted HTTP header in the URL log entries on the firewall.
+http_method,HTTP Method,"Threat,URL Filtering,Data Filtering","Only in URL filtering logs. Describes the HTTP Method used in the web request. Only the following methods are logged: Connect, Delete, Get, Head, Options, Post, Put."
+justification,Justification,"Threat,URL Filtering,Data Filtering",Justification for Data Filtering action.
+misc,URL/Filename,"Threat,URL Filtering,Data Filtering","Field with variable length. A Filename has a maximum of 63 characters. A URL has a maximum of 1023 characters
+
+The actual URI when the subtype is url
+
+File name or file type when the subtype is file
+
+File name when the subtype is virus
+
+File name when the subtype is wildfire-virus
+
+File name when the subtype is wildfire
+
+URL or File name when the subtype is vulnerability if applicable
+
+URL when Threat Category is domain-edl
+
+Spoofed SNI domain when a host header mismatch is detected (identified by a unique threat ID of 86467)."
+nssai_sd,A Slice Differentiator,"Traffic,Tunnel Inspection,GTP",The A Slice Differentiator of the Network Slice ID.
+object,Object,"Authentication,System,Audit",Name of the object associated with the system event.
+packets,Packets,"Traffic,Tunnel Inspection,SCTP",Number of total packets (transmit and receive) for the session.
+partial_hash,Partial Hash,"Threat,URL Filtering,Data Filtering",Machine Learning partial hash.
+pkts_received,Packets Received,"Traffic,Tunnel Inspection,SCTP",Number of server-to-client packets for the session.
+pkts_sent,Packets Sent,"Traffic,Tunnel Inspection,SCTP",Number of client-to-server packets for the session.
+recipient,Recipient,"Threat,URL Filtering,Data Filtering",Specifies the name of the receiver of an email.
+referer,Referer,"Threat,URL Filtering,Data Filtering","Only for the URL Filtering subtype; all other types do not use this field.
+
+The Referer field in the HTTP header contains the URL of the web page that linked the user to another web page; it is the source that redirected (referred) the user to the web page that is being requested."
+reportid,Report ID,"Threat,URL Filtering,Data Filtering","Only for Data Filtering and WildFire subtype; all other types do not use this field.
+
+Identifies the analysis request on the firewall, WildFire cloud, or the WildFire appliance."
+sender,Sender,"Threat,URL Filtering,Data Filtering",Specifies the name of the sender of an email.
+serial #,Serial Number,"Threat,URL Filtering,Data Filtering",Serial number of the firewall that generated the log.
+start,Start Time,"Traffic,Tunnel Inspection,GTP",Time of session start.
+subject,Subject,"Threat,URL Filtering,Data Filtering",Specifies the subject of an email.
+thr_category,Threat Category,"Threat,URL Filtering,Data Filtering","Describes threat categories used to classify different types of threat signatures.
+
+If a domain external dynamic list generated the log, domain-edl populates this field."
+threatid,Threat ID,"Threat,URL Filtering,Data Filtering","Palo Alto Networks identifier for known and custom threats. It is a description string followed by a 64-bit numerical identifier in parentheses for some Subtypes:
+
+8000 – 8099— scan detection
+
+8500 – 8599— flood detection
+
+9999— URL filtering log
+
+10000 – 19999 —spyware phone home detection
+
+20000 – 29999 —spyware download detection
+
+30000 – 44999 —vulnerability exploit detection
+
+52000 – 52999— filetype detection
+
+60000 – 69999 —data filtering detection
+
+If the Domain EDL field is populated, then this field is populated with the same value.
+
+FM Dita Overlay for Notes Component
+
+Threat ID ranges for virus detection, WildFire signature feed, and DNS C2 signatures used in previous releases have been replaced with permanent, globally unique IDs. Refer to the Threat/Content Type (subtype) and Threat Category (thr_category) field names to create updated reports, filter threat logs, and ACC activity."
+url_category_list,URL Category List,"Threat,URL Filtering,Data Filtering",Lists the URL filtering categories that the firewall used to enforce policy.
+url_idx,URL Index,"Threat,URL Filtering,Data Filtering","Used in URL Filtering and WildFire subtypes.
+
+When an application uses TCP keepalives to keep a connection open for a length of time, all the log entries for that session have a single session ID. In such cases, when you have a single threat log (and session ID) that includes multiple URL entries, the url_idx is a counter that allows you to correlate the order of each log entry within the single session.
+
+For example, to learn the URL of a file that the firewall forwarded to WildFire for analysis, locate the session ID and the url_idx from the WildFire Submissions log and search for the same session ID and url_idx in your URL filtering logs. The log entry that matches the session ID and url_idx will contain the URL of the file that was forwarded to WildFire."
+xff,X-Forwarded-For,"Threat,URL Filtering,Data Filtering","Only for the URL Filtering subtype; all other types do not use this field.
+
+The X-Forwarded-For field in the HTTP header contains the IP address of the user who requested the web page. It allows you to identify the IP address of the user, which is useful particularly if you have a proxy server on your network that replaces the user IP address with its own address in the source IP address field of the packet header.
+
+FM Dita Overlay for Notes Component
+
+Based on different appliance implementations, the XFF field may contain non-IP address values."
+action_source,Action Source,"Traffic,Tunnel Inspection","Specifies whether the action taken to allow or block an application was defined in the application or in policy. The actions can be allow, deny, drop, reset- server, reset-client or reset-both for the session."
+bytes,Bytes,"Traffic,Tunnel Inspection",Number of total bytes (transmit and receive) for the session.
+bytes_received,Bytes Received,"Traffic,Tunnel Inspection",Number of bytes in the server-to-client direction of the session.
+bytes_sent,Bytes Sent,"Traffic,Tunnel Inspection",Number of bytes in the client-to-server direction of the session.
+chunks,SCTP Chunks,"Traffic,SCTP",Sum of SCTP chunks sent and received for an association.
+chunks_received,SCTP Chunks Received,"Traffic,SCTP",Number of SCTP chunks received for an association.
+chunks_sent,SCTP Chunks Sent,"Traffic,SCTP",Number of SCTP chunks sent for an association.
+cmd,Command,"Config,Audit","Command performed by the Admin; values are add, clone, commit, delete, edit, move, rename, set."
+datasourcename,Data Source Name,"User ID,IP Tag",User-ID source that sends the IP (Port)-User Mapping.
+error,Error,"Decryption,GlobalProtect",A string showing the error that has occurred in the event.
+factorno,Factor Number,"Authentication,User ID","Indicates the use of primary authentication (1) or additional factors (2, 3)."
+ip,Source IP,"Authentication,User ID",Original session source IP address.
+machinename,Machine Name,"GlobalProtect,HIP Match",The name of the user’s machine.
+opaque,Description,"GlobalProtect,System",Additional information for any event that has occurred.
+remote_user_id,Remote User ID,"Tunnel Inspection,GTP","IMSI identity of a remote user, and if available, one IMEI identity or one MSISDN identity."
+remote_user_ip,Remote User IP,"Tunnel Inspection,GTP",IPv4 or IPv6 address of a remote user.
+serialnumber,Serial Number,"GlobalProtect,HIP Match",The serial number of the user’s machine or device.
+session_end_reason,Session End Reason,"Traffic,Tunnel Inspection","The reason a session terminated. If the termination had multiple causes, this field displays only the highest priority reason. The possible session end reason values are as follows, in order of priority (where the first is highest):
+
+threat—The firewall detected a threat associated with a reset, drop, or block (IP address) action.
+
+policy-deny—The session matched a security rule with a deny or drop action.
+
+decrypt-cert-validation—The session terminated because you configured the firewall to block SSL forward proxy decryption or SSL inbound inspection when the session uses client authentication or when the session uses a server certificate with any of the following conditions: expired, untrusted issuer, unknown status, or status verification time-out. This session end reason also displays when the server certificate produces a fatal error alert of type bad_certificate, unsupported_certificate, certificate_revoked, access_denied, or no_certificate_RESERVED (SSLv3 only).
+
+decrypt-unsupport-param—The session terminated because you configured the firewall to block SSL forward proxy decryption or SSL inbound inspection when the session uses an unsupported protocol version, cipher, or SSH algorithm. This session end reason is displays when the session produces a fatal error alert of type unsupported_extension, unexpected_message, or handshake_failure.
+
+decrypt-error—The session terminated because you configured the firewall to block SSL forward proxy decryption or SSL inbound inspection when firewall resources or the hardware security module (HSM) were unavailable. This session end reason is also displayed when you configured the firewall to block SSL traffic that has SSL errors or that produced any fatal error alert other than those listed for the decrypt-cert-validation and decrypt-unsupport-param end reasons.
+
+tcp-rst-from-client—The client sent a TCP reset to the server.
+
+tcp-rst-from-server—The server sent a TCP reset to the client.
+
+resources-unavailable—The session dropped because of a system resource limitation. For example, the session could have exceeded the number of out-of-order packets allowed per flow or the global out-of-order packet queue.
+
+tcp-fin—Both hosts in the connection sent a TCP FIN message to close the session."
+tag_name,Tag Name,"User ID,IP Tag",Name of the tag associated with the dynamic user group associated with the User Group the user is mapped to.
+timeout,Time Out Threshold,"User ID,IP Tag",Timeout after which the IP/User Mappings are cleared.
+tunnel_insp_rule,Tunnel Inspection Rule,"Tunnel Inspection,GTP",Name of the tunnel inspection rule matching the cleartext tunnel traffic.
+user,User,"Authentication,User ID",End user being authenticated.
+admin,Admin,Config,Username of the Administrator performing the configuration
+after-change-detail,After Change Detail,Config,"This field is in custom logs only; it is not in the default format.
+
+It contains the full xpath after the configuration change."
+ai_fwd_error,AI Forward Error,Traffic,Indicates whether an error was encountered during traffic forwarding by the AI engine.
+ai_traffic,AI Traffic,Traffic,Indicates whether the network session is being processed by AI-driven security services.
+apn,Access Point Name,GTP,Reference to a Packet Data Network Data Gateway (PGW)/ Gateway GPRS Support Node in a mobile network. Composed of a mandatory APN Network Identifier and an optional APN Operator Identifier.
+area_code,Area Code,GTP,Area within a Public Land Mobile Network (PLMN).
+assoc_end_reason,SCTP Association End Reason,SCTP,"Reason an association was terminated. If the termination had multiple causes, the highest priority reason is displayed. The possible session end reasons in descending priority are:
+
+shutdown-from-endpoint (highest)—endpoint sends out SHUTDOWN
+
+abort-from-endpoint—endpoint sends out ABORT
+
+unknown (lowest)—the association aged out, or association termination reason is not covered by one of the previous reasons (for example, a clear session all command)."
+attempted_gateways,Attempted Gateways,GlobalProtect,"The fields that are collected for each gateway connection attempt with the gateway name, SSL response time, and priority (see Gateway Priority in a Multiple Gateway Configuration. Each field entry is separated by commas such as g82-gateway,12,3. Each gateway entry is separated by semicolons such as g83-gateway,10,2;g84-gateway,-1,1."
+auth_method,Authentication Method,GlobalProtect,"A string showing the authentication type, such as LDAP, RADIUS, or SAML."
+authid,Authentication ID,Authentication,Unique ID given across primary authentication and additional (multi factor) authentication.
+authpolicy,Authentication Policy,Authentication,Policy invoked for authentication before allowing access to a protected resource.
+authproto,Authentication Protocol,Authentication,"Indicates the authentication protocol used by the server. For example, PEAP with GTC."
+before-change-detail,Before Change Detail,Config,"This field is in custom logs only; it is not in the default format.
+
+It contains the full xpath before the configuration change."
+beginport,Source Port,User ID,Source port utilized by the session.
+cause_code,GTP Cause,GTP,GTP cause value in logs responses which contain an Information Element that provides information about acceptance or rejection of GTP requests by a network node.
+cell_id,Cell ID,GTP,Base station within an area code.
+cert_flags,Certificate Flags,Decryption,"The certificate flags can return seven values:
+
+Session is resumed (b_resume_session)
+
+Certificate (subject) common name is truncated (b_cert_cn_truncated)
+
+Issuer common name is truncated (b_issuer_cn_truncated)
+
+Root common name is truncated (b_root_cn_truncated)
+
+Server Name Indication (SNI) is truncated (b_sni_truncated)
+
+Certificate type, RSA or ECDSA (b_cert_type)
+
+Unused (padding3)"
+cert_serial,Certificate Serial Number,Decryption,The unique identifier of the certificate (generated by the certificate issuer).
+cert_size,Certificate Size,Decryption,The certificate key size.
+cert_ver,Certificate Version,Decryption,"The certificate version (V1, V2, or V3)."
+chain_status,Chain Status,Decryption,"Whether the chain is trusted. Values are:
+
+Uninspected
+
+Untrusted
+
+Trusted
+
+Incomplete"
+client,Client,Config,Client used by the Administrator; values are Web and CLI
+client_os,Client OS,GlobalProtect,"The client device’s OS type (for example, Windows or Linux)."
+client_os_ver,Client OS Version,GlobalProtect,The client device’s OS version.
+client_ver,Client Version,GlobalProtect,The client’s GlobalProtect app version.
+clienttype,Client Type,Authentication,Type of client used to complete authentication (such as authentication portal).
+cn,Subject Common Name,Decryption,The domain name (the name of the server that the certificate protects).
+cn_len,Common Name Length,Decryption,The length of the subject common name.
+comment,Audit Comment,Config,The audit comment entered in a policy rule configuration change.
+config_ver,Config Version,Decryption,The software version.
+connect_method,Connect Method,GlobalProtect,"A string showing the how the GlobalProtect app connects to Gateway, (for example, on-demand or user-logon."
+datasource,Data Source,User ID,Source from which mapping information is collected.
+datasource_subtype,Data Source Subtype,IP Tag,The mechanism used to identify the IP address-to-username mappings within a data source.
+datasource_type,Data Source Type,IP Tag,The source from which mapping information is collected.
+datasourcetype,Data Source Type,User ID,Mechanism used to identify the IP/User mappings within a data source.
+desc,Description,Authentication,Additional authentication information.
+dg_id,Device Group,Config,The device group the firewall belongs to if managed by a Panorama™ management server.
+diam_app_id,Diameter App ID,SCTP,The diameter application in the data chunk which triggered the event. Diameter Application ID is assigned by Internet Assigned Numbers Authority (IANA).
+diam_avp_code,Diameter AVP Code,SCTP,The diameter AVP code in the data chunk which triggered the event.
+diam_cmd_code,Diameter Command Code,SCTP,The diameter command code in the data chunk which triggered the event. Diameter Command Code is assigned by Internet Assigned Numbers Authority (IANA)
+dst_adv_dev_id,Destination Adv DevID,Traffic,The unique identifier for the endpoint receiving the session. This advanced ID provides highly precise device recognition for the security policy engine. It establishes a direct link between network traffic and the comprehensive Device-ID object used for enforcement.
+ec_curve,Elliptic Curve,Decryption,The elliptic cryptography curve that the client and server negotiate and use for connections that use ECDHE cipher suites.
+end_ip_adr,End User IP Address,GTP,IP address of a mobile subscriber allocated by a PGW/GGSN.
+endport,Destination Port,User ID,Destination port utilized by the session.
+err_index,Error Index,Decryption,"The type of error that occurred: Cipher, Resource, Resume, Version, Protocol, Certificate, Feature, or HSM."
+error_code,Error Code,GlobalProtect,An integer associated with any errors that occurred.
+event,Event Type,Authentication,Result of the authentication attempt.
+event_code,GTP Event Code,GTP,Event code describing the GTP event.
+event_type,GTP Event Type,GTP,Defines event triggered by a GTP message when checks in GTP protection profile are applied to the GTP traffic. Also triggered by the start or end of a GTP session.
+evidence,Evidence,Correlated Events,"A summary statement that indicates how many times the host has matched against the conditions defined in the correlation object. For example, Host visited known malware URl (19 times)."
+factorcompletiontime,Factor Completion Time,User ID,Time the authentication was completed.
+factortype,Factor Type,User ID,Vendor used to authenticate a user when Multi Factor authentication is present.
+fingerprint,Fingerprint,Decryption,A hash of the certificate in x509 binary format.
+gateway,Gateway,GlobalProtect,The name of the gateway that is specified on the portal configuration.
+gtp_interface,GTP Interface,GTP,3GPP interface from which a GTP message is received.
+host,Host,Config,Hostname or IP address of the client machine
+hs_stage_c2f,Stage for Client to Firewall,Decryption,"The stage of the TLS handshake from the client to the firewall, for example, Client Hello, Server Hello, Certificate, Client/Server key exchange, etc."
+hs_stage_f2s,Stage for Firewall to Server,Decryption,The stage of the TLS handshake from the firewall to the server.
+imei,Monitor Tag/IMEI,GTP,International Mobile Equipment Identity (IMEI) is a unique 15 or 16 digit number allocated to each mobile station equipment.
+imsi,Tunnel ID/IMSI,GTP,International Mobile Subscriber Identity (IMSI) is a unique number allocated to each mobile subscriber in the GSM/UMTS/EPS system. IMSI shall consist of decimal digits (0 through 9) only and maximum number of digits allowed are 15.
+issuer_cn,Issuer Subject Common Name,Decryption,The name of the organization that verified the certificate’s contents.
+issuer_len,Issuer Common Name Length,Decryption,The length of the issuer common name.
+k8s_cluster_id,K8S Cluster ID,Traffic,The unique identifier of the Kubernetes cluster that is the source of the traffic. This ID establishes a link to the related Virtual Machine (VM) UUID.
+link_change_count,App Flap Count,Traffic,Number of link flaps that occurred during the session.
+link_switches,Link Switches,Traffic,"Contains up to four link flap entries, with each entry containing the link name, link tag, link type, physical interface, timestamp, bytes read, bytes written, link health, and link flap cause."
+location,Location,GlobalProtect,A string showing the administrator-defined location of the GlobalProtect portal or gateway.
+login_duration,Login Duration,GlobalProtect,"The length of time, in seconds, the user is connected to the GlobalProtect gateway from logging in to logging out."
+mac,Device MAC Address,HIP Match,The MAC address of the user’s machine or device.
+matchname,HIP,HIP Match,Name of the HIP object or profile.
+matchtype,HIP Type,HIP Match,Whether the hip field represents a HIP object or a HIP profile.
+max_encap,Maximum Encapsulation,Tunnel Inspection,Number of packets the firewall dropped because the packet exceeded the maximum number of encapsulation levels configured in the Tunnel Inspection policy rule (Drop packet if over maximum tunnel inspection level).
+mcc,Serving Country MCC,GTP,Mobile country code of serving core network operator.
+mnc,Serving Network MNC,GTP,Mobile network code of serving core network operator.
+module,Module,System,"This field is valid only when the value of the Subtype field is general. It provides additional information about the sub-system generating the log; values are general, management, auth, ha, upgrade, chassis."
+msg_type,GTP Message Type,GTP,Indicates the GTP message type.
+msisdn,MSISDN,GTP,"Service identity associated with the mobile subscriber composed of a Country Code, National Destination Code and a Subscriber. Consists of decimal digits (0-9) only with a maximum of 15 digits."
+normalize_user,Normalize User,Authentication,Normalized version of username being authenticated (such as appending a domain name to the username).
+notafter,Certificate End Date,Decryption,The time the certificate expires (certificate becomes invalid after this time).
+notbefore,Certificate Start Date,Decryption,The time the certificate became valid (certificate in invalid before this time).
+object_id,Object ID,Correlated Events,Name of the object associated with the system event.
+objectname,Object Name,Correlated Events,Name of the correlation object that was matched on.
+offloaded,Offloaded,Traffic,Displays 1 if traffic flow has been offloaded or 0 if traffic flow was not offloaded.
+op_code,Op Code,SCTP,"Identifies the operation code of application layer SS7 protocols, like MAP or CAP, in the data chunk which triggered the event."
+origindatasource,Origin Data Source,User ID,Source where the User-ID mapping originated.
+os,Operating System,HIP Match,The operating system installed on the user’s machine or device (or on the client system).
+path,Configuration Path,Config,The path of the configuration command issued; up to 512 bytes in length
+pdu_session_id,PDU Session ID,Tunnel Inspection,Session ID for the collection of L4 segments inside a tunnel.
+policy_id,Policy ID,Traffic,Name of the SD-WAN policy.
+policy_name,Policy Name,Decryption,The name of the Decryption policy associated with the session.
+portal,Portal,GlobalProtect,The name of the GlobalProtect portal or gateway.
+priority,Priority,GlobalProtect,"The priority order of the gateway that is based on highest (1), high (2), medium (3), low (4), or lowest (5) to which the GlobalProtect app can connect."
+private_ip,Private IP,GlobalProtect,The private IP address for the user who initiated the session.
+private_ipv6,Private IPv6,GlobalProtect,The private IPv6 address for the user who initiated the session.
+proxy_type,Proxy Type,Decryption,"The Decryption proxy type, such as Forward for Forward Proxy, Inbound for Inbound Inspection, No Decrypt for undecrypted traffic, GlobalProtect, etc."
+public_ip,Public IP,GlobalProtect,The public IP address for the user who initiated the session.
+public_ipv6,Public IPv6,GlobalProtect,The public IPv6 address for the user who initiated the session.
+rat,Radio Access Technology,GTP,"Type of technology used for radio access. For example, EUTRAN, WLAN, Virtual, HSPA Evolution, GAN and GERAN."
+region,Region,Authentication,The geographical region where the traffic originates.
+response_time,Response Time,GlobalProtect,The SSL response time of the selected gateway that is measured in milliseconds on the endpoint during tunnel setup.
+result,Result,Config,"Result of the configuration action; values are Submitted, Succeeded, Failed, and Unauthorized"
+root_cn,Root Subject Common Name,Decryption,The name of the root certificate authority.
+root_status,Root Status,Decryption,"The status of the root certificate, for example, trusted, untrusted, or uninspected."
+rootcn_len,Root Common Name Length,Decryption,The length of the root common name.
+sccp_calling_gt,SCCP Calling Party Global Title,SCTP,The Signaling Connection Control Part (SCCP) calling party global title (GT) in the data chunk which triggered the event.
+sccp_calling_ssn,SCCP Calling Party SSN,SCTP,The Signaling Connection Control Part (SCCP) calling party subsystem number (SSN) in the data chunk which triggered the event.
+sctp_cause_code,SCTP Cause Code,SCTP,Sent by an endpoint to specify reason for an error condition to other endpoint of same SCTP association.
+sctp_chunk_type,SCTP Chunk Type,SCTP,"Describes the type of information contained in a chunk, such as control or data."
+sctp_filter,SCTP Filter,SCTP,Name of the filter that the SCTP chunk matched.
+sdwan_cluster,SD-WAN Cluster,Traffic,Name of the SD-WAN cluster.
+sdwan_cluster_type,SD-WAN Cluster Type,Traffic,Type of cluster (mesh or hub-spoke).
+sdwan_device_type,SD-WAN Device Type,Traffic,Type of device (hub or branch).
+sdwan_site,SD-WAN Site,Traffic,Name of the SD-WAN site.
+selection_type,Selection Type,GlobalProtect,"The connection method that is selected to connect to the gateway.
+
+manual—The gateway to which you want the GlobalProtect app to manually connect.
+
+preferred—The preferred gateway to which you want the GlobalProtect app to connect.
+
+auto—Automatically connect to the Best Available gateway based on the priority assigned to the gateway and the response time."
+serverprofile,Server Profile,Authentication,Authentication server used for authentication.
+session_owner,Session Owner,Traffic,The original high availability (HA) peer session owner in an HA cluster from which the session table data was synchronized upon HA failover.
+sessions_closed,Sessions Closed,Tunnel Inspection,Number of completed/closed sessions created.
+sessions_created,Sessions Created,Tunnel Inspection,Number of inner sessions created.
+sni,Server Name Indication,Decryption,The hostname of the server that the client is trying to contact. Using SNIs enables a server to host multiple websites and present multiple certificates on the same IP address and TCP port because each website has a unique SNI.
+sni_len,SNI Length,Decryption,The length of the Server Name Indication (hostname).
+src_adv_dev_id,Source Adv DevID,Traffic,The unique identifier for the endpoint initiating the session. This advanced ID provides highly precise device recognition for the security policy engine. It establishes a direct link between network traffic and the comprehensive Device-ID object used for enforcement.
+srcipv6,IPv6 Source Address,HIP Match,IPv6 address of the user’s machine or device.
+srcregion,Source Region,GlobalProtect,The region for the user who initiated the session.
+stage,Stage,GlobalProtect,"A string showing the stage of the connection (for example, before-login, login, or tunnel)."
+status,Status,GlobalProtect,The status (success or failure) of the event.
+stream_id,SCTP Stream ID,SCTP,ID of the stream which carries the data chunk which triggered the event.
+strict_check,Strict Check,Tunnel Inspection,"Number of packets the firewall dropped because the tunnel protocol header in the packet failed to comply with the RFC for the tunnel protocol, as enabled in the Tunnel Inspection policy rule (Drop packet if tunnel protocol fails strict header check)."
+tcp_retransit_cnt_c2s,,Traffic,
+tcp_retransit_cnt_s2c,,Traffic,
+tcp_rtt_c2s,,Traffic,
+tcp_rtt_s2c,,Traffic,
+tcp_zero_window_cnt_c2s,,Traffic,
+tcp_zero_window_cnt_s2c,,Traffic,
+teid1,Tunnel Endpoint Identifier1,GTP,Identifies the GTP tunnel in the network node. TEID1 is the first TEID in the GTP message.
+teid2,Tunnel Endpoint Identifier2,GTP,Identifies the GTP tunnel in the network node. TEID2 is the second TEID in the GTP message.
+time_received,Time Logged,Decryption,The time the log was received.
+tls_auth,Hash Algorithm,Decryption,"The authentication algorithm used for the session, for example, SHA, SHA256, SHA384, etc."
+tls_enc,Encryption Algorithm,Decryption,"The algorithm used to encrypt the session data, such as AES-128-CBC, AES-256-GCM, etc."
+tls_keyxchg,Key Exchange Algorithm,Decryption,The key exchange algorithm used for the session.
+tls_version,TLS Version,Decryption,The version of TLS protocol used for the session.
+total_n_ooseq_c2s,,Traffic,
+total_n_ooseq_s2c,,Traffic,
+tunnel_fragment,Tunnel Fragment,Tunnel Inspection,Number of packets the firewall dropped because of fragmentation errors.
+tunnel_type,Tunnel Type,GlobalProtect,The type of tunnel (either SSLVPN or IPSec).
+ugflags,User Group Flags,User ID,"Displays whether the user group that was found during user group mapping. Supported values are:
+
+User Group Found—Indicates whether the user could be mapped to a group.
+
+Duplicate User—Indicates whether duplicate users were found in a user group. Displays N/A if no user group is found."
+unknown_proto,Unknown Protocol,Tunnel Inspection,"Number of packets the firewall dropped because the packet contains an unknown protocol, as enabled in the Tunnel Inspection policy rule (Drop packet if unknown protocol inside tunnel)."
+userbysource,User by Source,User ID,Indicates the username received from the source through IP address-to-username mapping.
+vendor,Vendor,Authentication,Vendor providing additional factor authentication.
+verif_tag_1,SCTP Verification Tag 1,SCTP,Used by endpoint1 which initiates the association to verify if the SCTP packet received belongs to current SCTP association and validate the endpoint2.
+verif_tag_2,SCTP Verification Tag 2,SCTP,Used by endpoint2 to verify if the SCTP packet received belongs to current SCTP association and validate the endpoint1.
