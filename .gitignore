@@ -1,7 +1,7 @@
 __pycache__/
 *.pyc
 
-/home/dragon/palos/generate_ecs_skeleton.py
+generate_ecs_skeleton.py
 
 # ECS mapping generated artifacts
 11.1+/ecs/ecs_candidates.csv
