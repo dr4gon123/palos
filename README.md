@@ -119,3 +119,7 @@ See [DEVELOPERS_GUIDE.md](DEVELOPERS_GUIDE.md) for:
 - How to add a new exception (field name lookup correction, variable name correction, raw format token fix)
 - Key methods reference
 - Architecture overview
+
+---
+
+*Not intested in Palo Alto? Check out [Flores - FortiGate Log Message Reference Scraper](https://github.com/dr4gon123/flores)*
