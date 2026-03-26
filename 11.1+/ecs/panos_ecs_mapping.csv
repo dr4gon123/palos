@@ -12,11 +12,7 @@ Drop—session dropped before the application is identified and there is no rule
 Deny—session dropped after the application is identified and there is a rule to block or no rule that allows the session.",,,,
 type,Type,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",Specifies the type of log; value is TRAFFIC.,,,,
 vsys,Virtual System,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,GTP,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",Virtual System associated with the session.,,,,
-device_name,Device Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",The hostname of the firewall on which the session was logged.,"=
-=","observer.hostname
-related.hosts","keyword
-keyword","Hostname of the observer.
-All the host identifiers seen on your event."
+device_name,Device Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",The hostname of the firewall on which the session was logged.,"=","observer.hostname","keyword","Hostname of the observer."
 dg_hier_level_1,,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",,,,,
 dg_hier_level_2,,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",,,,,
 dg_hier_level_3,,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag,Config,System,Correlated Events",,,,,
@@ -53,6 +49,7 @@ actionflags,Action Flags,"Traffic,Threat,URL Filtering,Data Filtering,Decryption
 repeatcnt,Repeat Count,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,SCTP,HIP Match,User ID,IP Tag","Number of sessions with same Source IP, Destination IP, Application, and Subtype seen within 5 seconds.",,,,
 cluster_name,Cluster Name,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GlobalProtect,Authentication,HIP Match,User ID,IP Tag",Name of the CN-Series firewall cluster.,,,,
 src,Source Address,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP,HIP Match,IP Tag,Correlated Events",Original session source IP address.,"=
+=
 =
 ->","source.address
 source.ip
@@ -94,6 +91,7 @@ network.community_id","long
 keyword","Destination port utilized by the session.
 A hash of source and destination IPs and ports."
 dst,Destination Address,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection,GTP,SCTP",Original session destination IP address.,"=
+=
 =
 ->","destination.address
 destination.ip
@@ -429,6 +427,7 @@ datasourcename,Data Source Name,"User ID,IP Tag",User-ID source that sends the I
 error,Error,"Decryption,GlobalProtect",A string showing the error that has occurred in the event.,=,error.message,match_only_text,Error message.
 factorno,Factor Number,"Authentication,User ID","Indicates the use of primary authentication (1) or additional factors (2, 3).",,,,
 ip,Source IP,"Authentication,User ID",Original session source IP address.,"=
+=
 =","source.address
 source.ip
 related.ip","keyword
