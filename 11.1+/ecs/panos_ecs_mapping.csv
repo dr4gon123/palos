@@ -631,6 +631,7 @@ sni_len,SNI Length,Decryption,The length of the Server Name Indication (hostname
 src_adv_dev_id,Source Adv DevID,Traffic,The unique identifier for the endpoint initiating the session. This advanced ID provides highly precise device recognition for the security policy engine. It establishes a direct link between network traffic and the comprehensive Device-ID object used for enforcement.,,,,
 srcipv6,IPv6 Source Address,HIP Match,IPv6 address of the user’s machine or device.,"=
 =
+=
 ->","source.address
 source.ip
 related.ip
