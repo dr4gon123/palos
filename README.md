@@ -1,12 +1,10 @@
 # PALOS — PAN-OS Logs Scraper
 
-PALOS extracts Palo Alto Networks PAN-OS syslog field documentation from the official docs
-site and transforms it into clean, structured CSV datasets built for log normalization.
-Normalizing PAN-OS logs against ECS, OCSF, or a custom schema requires exact field names
-and positions across all 17 log types — information that PAN-OS spreads across seventeen
-separate documentation pages per version. PALOS collects and corrects it, delivering
-machine-readable syslog schemas ready for normalization pipelines, parser development,
-and field reference.
+PALOS extracts Palo Alto Networks PAN-OS syslog field documentation from the official docs site and transforms it into clean, structured CSV datasets.  It is designed for security engineers and data teams who need machine-readable syslog schemas for parser development, log normalization, or field reference. 
+
+Schema normalization makes firewall logs queryable, correlatable, and actionable across a modern security stack. Normalizing PAN-OS logs against ECS, OCSF, or a custom schema requires exact field names and positions across all log types — information that PAN-OS spreads across separate documentation pages per version. 
+
+PALOS provides that full pipeline: extracting and correcting schemas from official PAN-OS documentation, and translating them into ECS and OCSF field mappings ready for your normalization workflow.
 
 ## Quick Start
 
