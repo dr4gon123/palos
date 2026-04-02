@@ -94,7 +94,7 @@ paloalto_scraper_exceptions.yaml  # Known PAN-OS docs corrections (see below)
                   aligns by position index across all log types
                                │
                                ▼
-                      panos_syslog_fields.csv
+                      consolidated/panos_syslog_fields.csv
                       (rows = positions, columns = log types)
 
                   _write_consolidated_fields()
@@ -102,7 +102,7 @@ paloalto_scraper_exceptions.yaml  # Known PAN-OS docs corrections (see below)
                   (accumulated during each scrape_log_type call)
                                │
                                ▼
-                      panos_consolidated_fields.csv
+                      consolidated/panos_consolidated_fields.csv
                       (rows = unique variables, sorted by log type coverage)
 ```
 
@@ -204,7 +204,7 @@ DESCRIPTION_PRIORITY = [
 ### Stage 7 — `_write_consolidated_fields(version_dir)`
 
 Called at the end of `scrape_version()` after all log types have been processed. Writes the
-accumulated variable mappings to `panos_consolidated_fields.csv` with columns:
+accumulated variable mappings to `consolidated/panos_consolidated_fields.csv` with columns:
 
 - **Variable Name**: the final variable name after all corrections
 - **Field Name**: the field name from the field table (using DESCRIPTION_PRIORITY for selection)
