@@ -19,9 +19,11 @@ Output lands in version-named subdirectories (e.g. `11.1+/`) in the current work
 
 ```
 {version}/
-  {LogType}_format.csv        # e.g. Traffic_format.csv (not Traffic_Log_format.csv)
-  {LogType}_fields.csv        # e.g. Traffic_fields.csv
-  panos_syslog_fields.csv     # Consolidated matrix: rows = positions, columns = log types
+  {LogType}_format.csv           # e.g. Traffic_format.csv (not Traffic_Log_format.csv)
+  {LogType}_fields.csv           # e.g. Traffic_fields.csv
+  consolidated/
+    panos_syslog_fields.csv      # Consolidated matrix: rows = positions, columns = log types
+    panos_consolidated_fields.csv  # All variables: field name, log type coverage, description
 ```
 
 The log type name in config (e.g. `Traffic_Log`) has `_Log` stripped in output file names.

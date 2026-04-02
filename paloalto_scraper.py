@@ -712,7 +712,9 @@ class PaloAltoLogScraper:
         data = {n: columns[n] + [''] * (max_len - len(columns[n])) for n in ordered_names}
 
         df = pd.DataFrame(data, columns=ordered_names)
-        matrix_path = os.path.join(version_dir, 'panos_syslog_fields.csv')
+        consolidated_dir = os.path.join(version_dir, 'consolidated')
+        os.makedirs(consolidated_dir, exist_ok=True)
+        matrix_path = os.path.join(consolidated_dir, 'panos_syslog_fields.csv')
         try:
             df.to_csv(matrix_path, index=False)
             logger.info(
@@ -750,7 +752,9 @@ class PaloAltoLogScraper:
         # Sort: more log types first, then alphabetically
         rows.sort(key=lambda r: (-r['Log Types'].count(',') - 1, r['Variable Name']))
 
-        output_path = os.path.join(version_dir, 'panos_consolidated_fields.csv')
+        consolidated_dir = os.path.join(version_dir, 'consolidated')
+        os.makedirs(consolidated_dir, exist_ok=True)
+        output_path = os.path.join(consolidated_dir, 'panos_consolidated_fields.csv')
         try:
             with open(output_path, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.DictWriter(f, fieldnames=[

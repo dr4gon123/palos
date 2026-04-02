@@ -19,12 +19,6 @@ pip install requests beautifulsoup4 pandas lxml pyyaml
 ### Dry run (preview without scraping)
 Set `dry_run: true` in `paloalto_scraper_config.yaml`, then run the scraper.
 
-### Rebuild ECS mapping skeleton (after re-scraping or variable name corrections)
-```bash
-python3 generate_ecs_skeleton.py
-```
-
-
 ## Architecture
 
 This is a single-file web scraper (`paloalto_scraper.py`) with a YAML config (`paloalto_scraper_config.yaml`). It scrapes Palo Alto Networks PAN-OS syslog field documentation and outputs CSV datasets.
@@ -38,7 +32,8 @@ This is a single-file web scraper (`paloalto_scraper.py`) with a YAML config (`p
 4. Outputs per log type into `{version_name}/` directories:
    - `{LogType}_format.csv`: line 1 = original format string, line 2 = transformed (long names replaced with variable names like `receive_time`)
    - `{LogType}_fields.csv`: field table with added `Field Name lookup` and `Variable Name` columns; empty Variable Names are acceptable for fields with no parenthetical in PA docs
-5. After all per-type files exist, `panos_syslog_fields.csv` consolidates all log types into a matrix (position × log type)
+5. After all per-type files exist, `consolidated/panos_syslog_fields.csv` consolidates all log types into a matrix (position × log type)
+6. `consolidated/panos_consolidated_fields.csv` lists all unique variables with field name, log type coverage, and description
 
 ### Key methods
 - `extract_format_string(soup, log_type_name)` → `(raw_string, list[str])`: regex-extracts the `Format:` section, splits on commas, calls `_apply_per_log_corrections` (raw format token fixes), returns the preserved raw string and corrected token list
@@ -62,7 +57,9 @@ This is a single-file web scraper (`paloalto_scraper.py`) with a YAML config (`p
 {version_name}/              # e.g. 11.1+/
   {LogType}_format.csv       # e.g. Audit_format.csv, Traffic_format.csv (never Audit_Log_format.csv)
   {LogType}_fields.csv       # e.g. Audit_fields.csv — columns: Field Name, Field Name lookup, Variable Name, Description
-  panos_syslog_fields.csv    # consolidated matrix across all log types
+  consolidated/
+    panos_syslog_fields.csv      # consolidated matrix across all log types
+    panos_consolidated_fields.csv  # all unique variables: field name, log type coverage, description
   ecs/
     panos_ecs_mapping.csv    # unified ECS field mapping (manually curated); see FIELD_NAMING_NORMALIZATION.md
   ocsf/                      # placeholder for future OCSF mapping
