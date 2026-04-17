@@ -26,8 +26,6 @@ Output lands in version-named subdirectories (e.g. `11.1+/`) in the current work
     panos_consolidated_fields.csv  # All variables: field name, log type coverage, description
 ```
 
-The log type name in config (e.g. `Traffic_Log`) has `_Log` stripped in output file names.
-
 **`{LogType}_format.csv`** — line 1 is the raw comma-separated format string exactly as PAN-OS
 documents it (e.g. `FUTURE_USE, Receive Time, Serial Number, ...`). Line 2 is the transformed
 version with long names replaced by their snake_case variable names (`FUTURE_USE, receive_time,
