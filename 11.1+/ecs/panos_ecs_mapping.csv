@@ -216,9 +216,13 @@ All of the IPs seen on your event."
 src_category,Source Device Category,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The category for the device that Device-ID identifies as the source of the traffic.,,,,
 src_edl,Source External Dynamic List,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Tunnel Inspection",The name of the external dynamic list that contains the source IP address of the traffic.,,,,
 src_host,Source Hostname,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The hostname of the device that Device-ID identifies as the source of the traffic.,"=
+=
 =","source.domain
+host.hostname
 related.hosts","keyword
+keyword
 keyword","The domain name of the source host.
+Hostname of the host.
 All the host identifiers seen on your event."
 src_mac,Source MAC Address,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The MAC address for the device that Device-ID identifies as the source of the traffic.,=,source.mac,keyword,Source MAC address.
 src_model,Source Device Model,"Traffic,Threat,URL Filtering,Data Filtering,Decryption,Authentication",The model of the device that Device-ID identifies as the source of the traffic.,,,,
@@ -558,7 +562,17 @@ factortype,Factor Type,User ID,Vendor used to authenticate a user when Multi Fac
 fingerprint,Fingerprint,Decryption,A hash of the certificate in x509 binary format.,,,,
 gateway,Gateway,GlobalProtect,The name of the gateway that is specified on the portal configuration.,,,,
 gtp_interface,GTP Interface,GTP,3GPP interface from which a GTP message is received.,,,,
-host,Host,Config,Hostname or IP address of the client machine,,,,
+host,Host,Config,Hostname or IP address of the client machine,"->
+->
+->
+->","host.ip
+host.hostname
+related.ip
+related.host","ip
+keyword","Host ip addresses.
+Hostname of the host.
+All of the IPs seen on your event.
+All the host identifiers seen on your event."
 hs_stage_c2f,Stage for Client to Firewall,Decryption,"The stage of the TLS handshake from the client to the firewall, for example, Client Hello, Server Hello, Certificate, Client/Server key exchange, etc.",,,,
 hs_stage_f2s,Stage for Firewall to Server,Decryption,The stage of the TLS handshake from the firewall to the server.,,,,
 imei,Monitor Tag/IMEI,GTP,International Mobile Equipment Identity (IMEI) is a unique 15 or 16 digit number allocated to each mobile station equipment.,,,,
