@@ -16,6 +16,7 @@ import csv
 import logging
 import random
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
@@ -34,6 +35,14 @@ DESCRIPTION_PRIORITY = [
 ]
 
 _DESCRIPTION_PRIORITY_INDEX: dict[str, int] = {name: i for i, name in enumerate(DESCRIPTION_PRIORITY)}
+
+
+@dataclass
+class FieldInfo:
+    field_name: str
+    description: str
+    log_types: set[str]
+    priority: int
 
 
 class PaloAltoLogScraper:
@@ -63,7 +72,7 @@ class PaloAltoLogScraper:
         self.variable_name_corrections_per_log: dict[str, dict] = exceptions.get('variable_name_corrections', {}).get('per_log_type', {})
         self.per_log_corrections: dict[str, list] = exceptions.get('per_log_corrections', {})
 
-        self._consolidated_fields: dict[str, dict] = {}
+        self._consolidated_fields: dict[str, FieldInfo] = {}
 
         logger.info(f'Loaded {len(self.versions)} versions from main config')
         logger.info(f'Force rescrape: {self.force_rescrape}')
@@ -365,21 +374,21 @@ class PaloAltoLogScraper:
 
             if var_name not in self._consolidated_fields:
                 field_name, description = var_to_info.get(var_name, ('', ''))
-                self._consolidated_fields[var_name] = {
-                    'field_name': field_name,
-                    'description': description,
-                    'log_types': {display_name},
-                    'priority': priority,
-                }
+                self._consolidated_fields[var_name] = FieldInfo(
+                    field_name=field_name,
+                    description=description,
+                    log_types={display_name},
+                    priority=priority,
+                )
             else:
-                self._consolidated_fields[var_name]['log_types'].add(display_name)
-                existing_priority = self._consolidated_fields[var_name]['priority']
-                if priority < existing_priority:
+                info = self._consolidated_fields[var_name]
+                info.log_types.add(display_name)
+                if priority < info.priority:
                     field_name, description = var_to_info.get(var_name, ('', ''))
                     if field_name or description:
-                        self._consolidated_fields[var_name]['field_name'] = field_name
-                        self._consolidated_fields[var_name]['description'] = description
-                        self._consolidated_fields[var_name]['priority'] = priority
+                        info.field_name = field_name
+                        info.description = description
+                        info.priority = priority
 
     def _get_cell_text_with_formatting(self, cell) -> str:
         """Extract text from a BS4 cell while preserving line breaks from block elements."""
@@ -533,14 +542,14 @@ class PaloAltoLogScraper:
 
         rows = []
         for var_name, info in self._consolidated_fields.items():
-            sorted_log_types = [lt for lt in DESCRIPTION_PRIORITY if lt in info['log_types']]
-            sorted_log_types += sorted(info['log_types'] - set(DESCRIPTION_PRIORITY))
+            sorted_log_types = [lt for lt in DESCRIPTION_PRIORITY if lt in info.log_types]
+            sorted_log_types += sorted(info.log_types - set(DESCRIPTION_PRIORITY))
             log_types_str = ','.join(sorted_log_types)
             rows.append({
                 'Variable Name': var_name,
-                'Field Name': info['field_name'],
+                'Field Name': info.field_name,
                 'Log Types': log_types_str,
-                'PAN-OS Description': info['description'],
+                'PAN-OS Description': info.description,
             })
 
         rows.sort(key=lambda r: (-r['Log Types'].count(',') - 1, r['Variable Name']))
@@ -562,7 +571,7 @@ class PaloAltoLogScraper:
     async def scrape_version(self, client: httpx.AsyncClient, version: dict) -> int:
         """Scrape all log types for a specific PAN-OS version."""
         logger.info(f"Starting scrape for PAN-OS version {version['name']}")
-        self._consolidated_fields = {}
+        self._consolidated_fields: dict[str, FieldInfo] = {}
 
         version_dir = self.get_version_directory(version['name'])
         version_dir.mkdir(parents=True, exist_ok=True)
