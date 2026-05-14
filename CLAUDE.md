@@ -6,78 +6,114 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-### Run the scraper
 ```bash
+# Install dependencies
+pip install httpx[http2] beautifulsoup4 pandas lxml pyyaml
+
+# Run scraper
 python3 paloalto_scraper.py
-```
 
-### Install dependencies
-```bash
-pip install requests beautifulsoup4 pandas lxml pyyaml
+# Dry run (preview without scraping)
+# Set dry_run: true in paloalto_scraper_config.yaml, then run.
 ```
-
-### Dry run (preview without scraping)
-Set `dry_run: true` in `paloalto_scraper_config.yaml`, then run the scraper.
 
 ## Architecture
 
-This is a single-file web scraper (`paloalto_scraper.py`) with a YAML config (`paloalto_scraper_config.yaml`). It scrapes Palo Alto Networks PAN-OS syslog field documentation and outputs CSV datasets.
+Single-file async scraper (`paloalto_scraper.py`) with a YAML config. Scrapes PAN-OS syslog
+field documentation from Palo Alto Networks docs and outputs CSV datasets.
 
 ### Data flow
 1. Config loads PAN-OS versions and per-log-type URLs from `paloalto_scraper_config.yaml`
-2. `PaloAltoLogScraper.run()` iterates versions → log types
-3. For each log type page, it extracts:
-   - **Format string**: comma-separated ordered field list (e.g. `FUTURE_USE, Receive Time, Serial Number, ...`)
+2. `PaloAltoLogScraper.run()` creates one `httpx.AsyncClient` and iterates versions sequentially
+3. `scrape_version()` fans out log types concurrently via `asyncio.gather` + `asyncio.Semaphore`
+4. For each log type page:
+   - **Format string**: comma-separated ordered field list (e.g. `FUTURE_USE, Receive Time, ...`)
    - **Field table**: HTML table with `Field Name` and `Description` columns
-4. Outputs per log type into `{version_name}/` directories:
-   - `{LogType}_format.csv`: line 1 = original format string, line 2 = transformed (long names replaced with variable names like `receive_time`)
-   - `{LogType}_fields.csv`: field table with added `Field Name lookup` and `Variable Name` columns; empty Variable Names are acceptable for fields with no parenthetical in PA docs
-5. After all per-type files exist, `consolidated/panos_syslog_fields.csv` consolidates all log types into a matrix (position × log type)
-6. `consolidated/panos_consolidated_fields.csv` lists all unique variables with field name, log type coverage, and description
+5. Outputs per log type into `{version_name}/`:
+   - `{LogType}_format.csv`: line 1 = original format string, line 2 = transformed variable names
+   - `{LogType}_fields.csv`: field table with added `Field Name lookup` and `Variable Name` columns
+6. After all per-type files: `consolidated/panos_syslog_fields.csv` (position × log type matrix)
+   and `consolidated/panos_consolidated_fields.csv` (all unique variables with coverage + description)
 
 ### Key methods
-- `extract_format_string(soup, log_type_name)` → `(raw_string, list[str])`: regex-extracts the `Format:` section, splits on commas, calls `_apply_per_log_corrections` (raw format token fixes), returns the preserved raw string and corrected token list
-- `extract_field_table(soup)`: finds HTML table with "field name" header, parses with BS4, adds `Field Name lookup` (text before `(`, relaxed `\s*\(`) and `Variable Name` columns; empty Variable Names are acceptable
-- `_apply_field_name_lookup_corrections(field_table, log_type_name)`: normalizes the `Field Name lookup` column to match format string tokens; uses `field_name_lookup_corrections.global` then `per_log_type`
-- `_lookup_variable_names(tokens, field_table)` → `list[str]`: (1) DG Hierarchy regex handles all 3 naming patterns → `dg_hier_level_N`; (2) lookup token in `Field Name lookup` column — if found and non-empty Variable Name, return it; if found and empty Variable Name, write token back to `Variable Name` column and pass through; (3) not found → pass through
-- `_apply_variable_name_corrections(tokens, field_table, log_type_name)` → `(list[str], DataFrame)`: applies `variable_name_corrections.global` (replace-all) then `variable_name_corrections.per_log_type` (first-occurrence only on token list) to both the token list and the `Variable Name` column of the field table
-- `_apply_per_log_corrections(tokens, log_type_name)`: private helper called only from `extract_format_string`; `match:` (value-based) preferred over `position:` (index-based); supports `new:` and `split_into:`
-- `_get_cell_text_with_formatting()`: HTML→text that preserves intentional line breaks from block elements while collapsing source-formatting whitespace
+- `get_page_content(client, url)`: async HTTP fetch with exponential backoff + 429/Retry-After handling
+- `extract_format_string(soup, log_type_name)` → `(raw_string, list[str])`: regex-extracts `Format:` section, splits on commas, calls `_apply_per_log_corrections`, returns preserved raw string and corrected tokens
+- `extract_field_table(soup)`: finds HTML table with "field name" header; adds `Field Name lookup` (text before `(`) and `Variable Name` columns
+- `_apply_field_name_lookup_corrections(field_table, log_type_name)`: normalizes `Field Name lookup` to match format tokens; global then per_log_type
+- `_lookup_variable_names(tokens, field_table)`: (1) DG Hierarchy regex → `dg_hier_level_N`; (2) exact lookup in `Field Name lookup` — found + non-empty → return Variable Name; found + empty → write token back and pass through; (3) not found → pass through
+- `_apply_variable_name_corrections(tokens, field_table, log_type_name)`: global corrections (replace-all), then per-log-type (first-occurrence only on token list); both applied to field table Variable Name column
+- `_apply_per_log_corrections(tokens, log_type_name)`: called only from `extract_format_string`; `match:` preferred over `position:`; supports `new:` and `split_into:`
+- `_get_cell_text_with_formatting()`: BS4 tree walk preserving block-element line breaks, collapsing source whitespace
 
-### Config settings
+### Config settings (`paloalto_scraper_config.yaml`)
 | Key | Default | Effect |
 |-----|---------|--------|
-| `base_delay` | `1.0` | Seconds between HTTP requests |
-| `force_rescrape` | `false` | Skip existing version dirs unless true |
+| `base_delay` | `1.0` | Politeness sleep per slot after each page fetch |
+| `retry_backoff` | `2.0` | Exponential backoff multiplier: `base_delay × (backoff ^ attempt) + jitter` |
+| `max_retries` | `3` | Max retry attempts per URL |
+| `concurrency` | `5` | `asyncio.Semaphore` size — max parallel log-type fetches per version |
+| `inter_version_delay` | `2.0` | Sleep between versions |
+| `force_rescrape` | `true` | Re-fetch even if output already exists |
 | `dry_run` | `false` | Print plan without fetching |
 | `output_dir` | `"."` | Root output directory |
 
 ### Output structure
 ```
 {version_name}/              # e.g. 11.1+/
-  {LogType}_format.csv       # e.g. Audit_format.csv, Traffic_format.csv (never Audit_Log_format.csv)
-  {LogType}_fields.csv       # e.g. Audit_fields.csv — columns: Field Name, Field Name lookup, Variable Name, Description
+  {LogType}_format.csv       # e.g. Traffic_format.csv  (never Traffic_Log_format.csv)
+  {LogType}_fields.csv       # columns: Field Name, Field Name lookup, Variable Name, Description
   consolidated/
-    panos_syslog_fields.csv      # consolidated matrix across all log types
+    panos_syslog_fields.csv      # position × log type matrix
     panos_consolidated_fields.csv  # all unique variables: field name, log type coverage, description
   ecs/
-    panos_ecs_mapping.csv    # unified ECS field mapping (manually curated); see FIELD_NAMING_NORMALIZATION.md
-  ocsf/                      # placeholder for future OCSF mapping
+    panos_ecs_mapping.csv    # manually curated ECS mapping; see FIELD_NAMING_NORMALIZATION.md
 ```
 
-The log type name in config (e.g. `Audit_Log`) has `_Log` stripped when generating file names.
+## Code conventions
 
-**ECS mapping notation** (in `panos_ecs_mapping.csv`):
-- `=` direct 1:1 mapping, `->` derived/transformed
-- Multiple ECS targets per row: newline-within-cell, each column line corresponds to one target
-- See [FIELD_NAMING_NORMALIZATION.md](FIELD_NAMING_NORMALIZATION.md) for full notation reference and workflow
+All new code must follow these conventions.
+
+### Language & imports
+- **Python 3.10+** — use `X | None`, built-in generics, `match` where appropriate.
+- **`from __future__ import annotations`** at the top of every module.
+- **No `typing` module** — use built-in generics only: `list[str]`, `dict[str, str]`,
+  `tuple[str, ...]`, `X | None`. Never `List`, `Dict`, `Optional`, `Tuple`.
+
+### Type hints
+- All function signatures must be fully annotated.
+
+### File & path operations
+- **`pathlib.Path` only** — never `os.path`, `os.makedirs`, `os.getcwd`, or `open()` with
+  string paths. Use `Path.read_text()`, `Path.write_text()`, `Path.open()`,
+  `Path.mkdir(parents=True, exist_ok=True)`, `Path.iterdir()`.
+
+### HTTP & async
+- **`httpx.AsyncClient`** for all HTTP — never `requests`.
+- One shared client per run, created in `run()` as a context manager, passed to all callers.
+- All network functions are `async def`.
+- **Retry** via `get_page_content()`: exponential backoff `base_delay * (retry_backoff ** attempt) + jitter`, 429/Retry-After handling.
+- **Concurrency** via `asyncio.Semaphore(self.concurrency)` in `scrape_version()` — never `ThreadPoolExecutor`.
+  Politeness sleep (`base_delay`) is inside the semaphore block.
+
+### Logging
+- **`logging.getLogger(__name__)`** in every module — never `print()`.
+- `logging.basicConfig` only in `main()`, never at module level.
+- Use `%`-style or f-string formatting in log calls consistently.
+
+### Pandas
+- **No `iterrows()`** — use boolean indexing, `zip` over Series, `map`, or `to_dict('records')`.
+- No defensive `.copy()` unless an in-place mutation immediately follows.
+
+### General style
+- Docstrings: one short line only. No `Args:`/`Returns:` blocks.
+- No comments that describe *what* — only *why* (hidden constraints, workarounds).
+- Module-level constant for priority index: `_DESCRIPTION_PRIORITY_INDEX` — never call
+  `list.index()` in a hot loop.
 
 ### Gotchas
-- `force_rescrape` is currently `true` in config — every run re-fetches all pages. Set to `false` to skip existing output.
-- `field_name_lookup_corrections.global`: only add an entry when the table key is NEVER the
-  correct format token for any log type. If any log uses the table key as its format token,
-  use `field_name_lookup_corrections.per_log_type` for the specific logs that need a different
-  token. Per_log_type corrections are merged over global (same-key entries in per_log_type
-  override global), so an identity mapping (e.g. `"X": "X"`) can suppress a global rename for
-  a specific log type (see Audit_Log "Generate Time" in EDGE_CASES.md).
-- `per_log_corrections` with `match:` replaces the FIRST occurrence only (uses `list.index()`).
+- `force_rescrape` is currently `true` in config — every run re-fetches all pages. Set to `false` to skip.
+- `field_name_lookup_corrections.global`: only add when the key is NEVER the correct token for any log type.
+  Use `per_log_type` for log-specific overrides. Identity mapping `"X": "X"` suppresses a global rename.
+- `per_log_corrections` with `match:` replaces the FIRST occurrence only (`list.index()`).
+- asyncio is single-threaded: `_accumulate_consolidated_fields` is safe without a lock since it
+  contains no `await` — it runs to completion atomically between coroutine switches.
