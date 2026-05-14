@@ -80,7 +80,12 @@ All new code must follow these conventions.
   `tuple[str, ...]`, `X | None`. Never `List`, `Dict`, `Optional`, `Tuple`.
 
 ### Type hints
-- All function signatures must be fully annotated.
+- All function signatures must be fully annotated (parameters and return type).
+- Return `None` explicitly when a function returns nothing meaningful.
+- Use `X | None` for optional values — never `Optional[X]`.
+- Use `list[str]`, `dict[str, int]`, `tuple[str, str]` — never `List`, `Dict`, `Tuple`.
+- Annotate local variables when the type is not obvious from the right-hand side: `seen: set[str] = set()`.
+- Type hints are not enforced at runtime — they exist for static checkers (mypy/pyright) and readability. Do not add `isinstance` guards based solely on a hint.
 
 ### File & path operations
 - **`pathlib.Path` only** — never `os.path`, `os.makedirs`, `os.getcwd`, or `open()` with
