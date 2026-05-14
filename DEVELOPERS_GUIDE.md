@@ -27,15 +27,20 @@ paloalto_scraper_exceptions.yaml  # Known PAN-OS docs corrections (see below)
                        PaloAltoLogScraper.__init__()
                                   │
                                   ▼
-                          run()
-                    ┌─────────────────────────┐
-                    │  for each version        │
-                    │    for each log type     │
-                    │      scrape_log_type()   │
-                    └──────────┬──────────────┘
-                               │ HTTP GET
+                          run()  [async]
+                    ┌──────────────────────────────────┐
+                    │  one httpx.AsyncClient for run   │
+                    │  for each version (sequential)   │
+                    │    scrape_version()               │
+                    │      asyncio.Semaphore(N)         │
+                    │      asyncio.gather(              │
+                    │        scrape_log_type() × M      │
+                    │      )  ← M log types concurrent │
+                    └──────────┬───────────────────────┘
+                               │ async HTTP GET
                                ▼
                        get_page_content()
+                       (exponential backoff + 429 handling)
                        BeautifulSoup (soup)
                                │
                ┌───────────────┴───────────────┐
@@ -183,8 +188,9 @@ Applies variable name corrections to both the token list and the `Variable Name`
 ### Stage 6 — `_accumulate_consolidated_fields(output_tokens, field_table, log_type_name)`
 
 Called at the end of each `scrape_log_type()`, this method accumulates variable-to-field mappings
-in `self._consolidated_fields` for consolidated output. For each variable in `output_tokens`
-(excluding `FUTURE_USE` and empty strings):
+in `self._consolidated_fields: dict[str, FieldInfo]` for consolidated output. `FieldInfo` is a
+dataclass with fields `field_name`, `description`, `log_types: set[str]`, and `priority: int`.
+For each variable in `output_tokens` (excluding `FUTURE_USE` and empty strings):
 
 - Looks up the field name and description from the field table
 - Tracks which log types use each variable
@@ -325,7 +331,11 @@ of upstream format string changes. A warning is logged if the match value is not
 
 | Key | Default | Effect |
 |-----|---------|--------|
-| `settings.base_delay` | `1.0` | Seconds between HTTP requests |
+| `settings.base_delay` | `1.0` | Politeness sleep per slot after each page fetch; also base for backoff |
+| `settings.retry_backoff` | `2.0` | Exponential backoff multiplier: `base_delay × (backoff ^ attempt) + jitter` |
+| `settings.max_retries` | `3` | Max retry attempts per URL on transient failure |
+| `settings.concurrency` | `5` | `asyncio.Semaphore` size — max parallel log-type fetches per version |
+| `settings.inter_version_delay` | `2.0` | Sleep between versions |
 | `settings.force_rescrape` | `false` | Skip existing version dirs unless true |
 | `settings.dry_run` | `false` | Print scrape plan without fetching |
 | `settings.output_dir` | `"."` | Root output directory |
@@ -357,5 +367,5 @@ python3 paloalto_scraper.py
 python3 paloalto_scraper.py
 
 # Install dependencies
-pip install requests beautifulsoup4 pandas lxml pyyaml
+pip install httpx[http2] beautifulsoup4 pandas lxml pyyaml
 ```
