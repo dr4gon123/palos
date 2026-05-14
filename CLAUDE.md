@@ -105,6 +105,7 @@ All new code must follow these conventions.
 - No defensive `.copy()` unless an in-place mutation immediately follows.
 
 ### General style
+- **`@dataclass` for structured results** — use when a dict has a fixed, known schema (e.g. `FieldInfo`). Prefer attribute access over string-keyed dicts; typos become parse-time errors instead of silent `None`.
 - Docstrings: one short line only. No `Args:`/`Returns:` blocks.
 - No comments that describe *what* — only *why* (hidden constraints, workarounds).
 - Module-level constant for priority index: `_DESCRIPTION_PRIORITY_INDEX` — never call
